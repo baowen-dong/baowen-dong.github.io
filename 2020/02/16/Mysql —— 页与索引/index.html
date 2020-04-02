@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head tag -->
+<head><meta name="generator" content="Hexo 3.9.0">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content>
+    <meta name="keyword" content>
+    <link rel="shortcut icon" href="/img/ironman-draw.png">
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <title>
+        
+          Mysql —— 页与索引 - Baowen Dong | 董宝文
+        
+    </title>
+
+    <link rel="canonical" href="http://https://dongbaowen.github.io/2020/02/16/Mysql —— 页与索引/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS --> 
+    <link rel="stylesheet" href="/css/beantech.min.css">
+    
+    <!-- Pygments Highlight CSS -->
+    <link rel="stylesheet" href="/css/highlight.css">
+
+    <link rel="stylesheet" href="/css/widget.css">
+
+    <link rel="stylesheet" href="/css/rocket.css">
+
+    <link rel="stylesheet" href="/css/signature.css">
+
+    <link rel="stylesheet" href="/css/toc.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="https://cdn.staticfile.org/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+	<!-- Modified by Yu-Hsuan Yen -->
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        
+            background-image: url('Demo.png')
+            /*post*/
+        
+    }
+    
+    #signature{
+        background-image: url('/img/signature/BeanTechSign-white.png');
+    }
+    
+</style>
+
+<header class="intro-header" >
+    <!-- Signature -->
+    <div id="signature">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                
+                    <div class="post-heading">
+                        <div class="tags">
+                            
+                              <a class="tag" href="/tags/#Mysql" title="Mysql">Mysql</a>
+                            
+                        </div>
+                        <h1>Mysql —— 页与索引</h1>
+                        <h2 class="subheading">页与索引</h2>
+                        <span class="meta">
+                            Posted by 董宝文 on
+                            2020-02-16
+                        </span>
+                    </div>
+                
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+	
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Baowen Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+
+                    
+
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/about/">About</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/archive/">Archives</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/tags/">Tags</a>
+                        </li>
+                        
+                    
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        // CLOSE
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        // OPEN
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+    <!-- Main Content -->
+    <!-- Modify by Yu-Hsuan Yen -->
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+            <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+                <h2><span id="一-前言">一、前言</span></h2>
+<p>之前了解过Mysql中索引的数据结构，但是看得非常浅显，仅仅知道索引底层实现的数据结构是 B+ tree，以及B+ tree 简单的增加节点和删除节点。但是对一些细节问题依然不太明白，在此借助一篇讲解比较详细的文章来进行学习。</p>
+<blockquote>
+<p>原文：<a href="https://www.modb.pro/db/12468" target="_blank" rel="noopener">从头带你捋一遍 MySQL 索引结构，索引没你想的那么难！</a></p>
+</blockquote>
+<h2><span id="二-页的引入">二、页的引入</span></h2>
+<h3><span id="21-从一个简单的表开始">2.1 从一个简单的表开始</span></h3>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">user</span>(</span><br><span class="line">    <span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>,</span><br><span class="line">    age <span class="built_in">int</span>,</span><br><span class="line">    height <span class="built_in">int</span>,</span><br><span class="line">    weight <span class="built_in">int</span>,</span><br><span class="line">    <span class="keyword">name</span> <span class="built_in">varchar</span>(<span class="number">32</span>)</span><br><span class="line">)<span class="keyword">engine</span> = <span class="keyword">innoDb</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> <span class="keyword">user</span>(<span class="keyword">id</span>,age,height,weight,<span class="keyword">name</span>)<span class="keyword">VALUES</span>(<span class="number">2</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">7</span>,<span class="string">'小吉'</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> <span class="keyword">user</span>(<span class="keyword">id</span>,age,height,weight,<span class="keyword">name</span>)<span class="keyword">VALUES</span>(<span class="number">5</span>,<span class="number">2</span>,<span class="number">1</span>,<span class="number">8</span>,<span class="string">'小尼'</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> <span class="keyword">user</span>(<span class="keyword">id</span>,age,height,weight,<span class="keyword">name</span>)<span class="keyword">VALUES</span>(<span class="number">1</span>,<span class="number">4</span>,<span class="number">3</span>,<span class="number">1</span>,<span class="string">'小泰'</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> <span class="keyword">user</span>(<span class="keyword">id</span>,age,height,weight,<span class="keyword">name</span>)<span class="keyword">VALUES</span>(<span class="number">4</span>,<span class="number">1</span>,<span class="number">5</span>,<span class="number">2</span>,<span class="string">'小美'</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> <span class="keyword">user</span>(<span class="keyword">id</span>,age,height,weight,<span class="keyword">name</span>)<span class="keyword">VALUES</span>(<span class="number">3</span>,<span class="number">5</span>,<span class="number">6</span>,<span class="number">7</span>,<span class="string">'小蔡'</span>);</span><br></pre></td></tr></table></figure>
+<p>执行后，我们查一下表中的数据：</p>
+<figure class="highlight n1ql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span>;</span><br></pre></td></tr></table></figure>
+<p><img src="./%E9%A1%B5%E4%B8%8E%E7%B4%A2%E5%BC%95.png" alt="表中数据"><br>
+可以看到，数据已经完整地放到了我们创建的user表中。<br>
+但是不知道大家发现了什么没有，好像发生了一件非常诡异的事情，我们插入的数据好像乱序了。MySQL好像悄悄的给我们按照id排了个序。</p>
+<h5><span id="为什么会出现mysql在我们没有显式排序的情况下默默帮我们排了序呢它是在什么时候进行排序的">为什么会出现MySQL在我们没有显式排序的情况下，默默帮我们排了序呢？它是在什么时候进行排序的？</span></h5>
+<p>此时先不做解答，我们带着这这两个问题继续向后看。</p>
+<h3><span id="22-页的引入">2.2 页的引入</span></h3>
+<p>当以上表和数据创建好后，Mysql中会形成这样一个页：<br>
+<img src="./%E5%8D%95%E9%A1%B5%E7%BB%93%E6%9E%84.png" alt="image.png"></p>
+<p>上图就是我们目前为止所理解的页的结构，他包含我们的多条数据，其中的数据链表部分就是 User Record。另外，MySQL的数据以页组成，那么它有指向下一页的指针和指向上一页的指针。</p>
+<h5><span id="那么说到这里其实可以回答第一个问题了mysql实际上就是在我们插入数据的时候就帮我们在页中排好了序至于为什么要排序这里先卖个关子接着往下看">那么说到这里，其实可以回答第一个问题了，MySQL实际上就是在我们插入数据的时候，就帮我们在页中排好了序，至于为什么要排序，这里先卖个关子，接着往下看。</span></h5>
+<h2><span id="三-排序对性能的提升">三、 排序对性能的提升</span></h2>
+<p>上文中我们提了一个问题，为什么数据库在插入数据时要对其进行排序呢？我们按正常顺序插入数据不是也挺好的吗？<br>
+这就要涉及到一个数据库查询流程的问题了，无论如何，我们是绝对不会去平白无故地在插入数据时增加一个操作来让流程复杂化的，所以插入数据时排序一定有其目的，就是优化查询的效率。<br>
+而我们不难看出，页内部存放数据的模块，实质上就是一个链表的结构，链表的特点也就是<strong>增删快，查询慢</strong>，所以优化查询的效率是必须的。</p>
+<h3><span id="31-单页内对性能的提升">3.1 单页内对性能的提升</span></h3>
+<h4><span id="311-mysql保证插入时对-id-有序">3.1.1 Mysql保证插入时对 id 有序</span></h4>
+<p>还是基于我们第一节中的那张页图来谈，我们插入了五条数据，id分别是从1-5，那么假设我要找一个表中不存在的id，假设id=-1，那么现在的查询流程就是：</p>
+<blockquote>
+<p>将id=1的这一整页数据取出，进行逐个比对，那么当我们找到id=1的这条数据时，发现这个id大于我们所需要找的哪个id，由于数据库在插入数据时，已经进行过排序了，那么在id=1的数据后面，都是id&gt;1的数据，所以我们就不需要再继续往下寻找了。</p>
+</blockquote>
+<p>如果在插入时没有进行排序，那毋庸置疑，我们需要再继续往下进行寻找，逐条查找直到到结尾也没有找到这条数据，才能返回不存在这条数据。</p>
+<p>看似这种程度的排序已经提高了查询的效率，但是这样依然存在一些问题。我们再回到这张图：<br>
+<img src="./%E5%8D%95%E9%A1%B5%E7%BB%93%E6%9E%842.png" alt="image.png"></p>
+<p>我们不难看出，在现阶段我们了解的页模式中，只有一个功能，就是在查询某条数据的时候直接将一整页的数据加载到内存中，以减少硬盘IO次数，从而提高性能。</p>
+<p>但是，我们也可以看到，现在的页模式内部，实际上是采用了链表的结构，前一条数据指向后一条数据，本质上还是通过数据的逐条比较来取出特定的数据。</p>
+<p>那么假设，我们这一页中有一百万条数据，我们要查的数据正好在最后一个，那么我们是不是一定要从前往后找到这一条数据呢？</p>
+<p>如果是这样，我们需要查找的次数就达到了一百万次，即使是在内存中查找，这个效率也是不高的。那么，有什么办法来优化这种情况下的查找效率呢？</p>
+<h4><span id="312-通过页中的目录来提高查询效率">3.1.2 通过页中的目录来提高查询效率</span></h4>
+<p>我们可以打个比方，我们在看书的时候，如果要找到某一节，而这一节我们并不知道在哪一页，我们是不是就要从前往后，一节一节地去寻找我们需要的内容的页码呢？</p>
+<p>答案是否定的，因为在书的前面，存在目录，它会告诉你这一节在哪一页，例如，第一节在第1页、第二节在第13页。在数据库的页中，实际上也使用了这种目录的结构，这就是页目录。</p>
+<p>那么引入页目录之后，我们所理解的页结构，就变成了这样：<br>
+<img src="./%E5%8D%95%E9%A1%B5%E7%BB%93%E6%9E%843.png" alt="image.png"></p>
+<p>分析一下这张图，实际上页目录就像是我们在看书的时候书本的目录一样，目录项1就相当于第一节，目录项2就相当于第二节，而每一条数据就相当于书本的每一页</p>
+<p>这张图就可以解释成，<strong>第一节从第一页开始，第二节从第三页开始，而实际上，每个目录项会存放自己这个目录项当中最小的id，也就是说，目录项1中会存放1，而目录项2会存放3</strong>。</p>
+<p>那么对比一下数据库在没有页目录时候的查找流程，假设要查找id=3的数据，在没有页目录的情况下，需要查找id=1、id=2、id=3，三次才能找到该数据，而如果有页目录之后，只需要先查看一下id=3存在于哪个目录项下，然后直接通过目录项进行数据的查找即可</p>
+<p>如果在该目录项下没有找到这条数据，那么就可以直接确定这条数据不存在，这样就大大提升了数据库的查找效率，但是这种页目录的实现，首先就需要基于数据是在已经进行过排序的的场景下，才可以发挥其作用。</p>
+<h5><span id="所以看到这里大家应该明白第二个问题了为什么数据库在插入时会进行排序这才是真正发挥排序的作用的地方">所以看到这里，大家应该明白第二个问题了，为什么数据库在插入时会进行排序，这才是真正发挥排序的作用的地方。</span></h5>
+<h3><span id="32-多个页对性能的提升">3.2 多个页对性能的提升</span></h3>
+<h4><span id="321-mysql对多个页的组织关系">3.2.1 Mysql对多个页的组织关系</span></h4>
+<p>在上文中，我们基本上说明白了MySQL数据库中页的概念，以及它是如何基于页来减少磁盘IO次数的，以及排序是如何优化查询的效率的。</p>
+<p>那么我们现在再来思考第三个问题：在开头说页的概念的时候，我们有说过，MySQL中每一页的大小只有16KB，不会随着数据的插入而自动扩容，所以这16KB不可能存下我们所有的数据，那么必定会有多个页来存储数据，那么在多页的情况下，MySQL中又是怎么组织这些页的呢？</p>
+<p>针对这个问题，我们继续来画出我们现在所了解的多页的结构图：<br>
+<img src="./%E5%A4%9A%E9%A1%B5%E7%BB%93%E6%9E%84.png" alt="image.png"><br>
+可以看到，在数据不断变多的情况下，MySQL会再去开辟新的页来存放新的数据，而每个页都有指向下一页的指针和指向上一页的指针，将所有页组织起来（这里修改了一下数据，将每一列的数据都放到了数据区中，其中第一个空格之前的代表id），第一页中存放id为1-5的数据，第二页存放id为6-10的数据，第三页存放id为11-15的数据</p>
+<h5><span id="需要注意的是在开辟新页的时候我们插入的数据不一定是放在新开辟的页上而是要进行所有页的数据比较来决定这条插入的数据放在哪一页上而完成数据插入之后最终的多页结构就会像上图中画的那样">需要注意的是：在开辟新页的时候，我们插入的数据不一定是放在新开辟的页上，而是要进行所有页的数据比较，来决定这条插入的数据放在哪一页上，而完成数据插入之后，最终的多页结构就会像上图中画的那样。</span></h5>
+<p>在多页模式下，MySQL终于可以完成多数据的存储了，就是采用开辟新页的方式，将多条数据放在不同的页中，然后同样采用链表的数据结构，将每一页连接起来。</p>
+<h5><span id="那么可以思考第四个问题多页情况下是否对查询效率有影响呢">那么可以思考第四个问题：多页情况下是否对查询效率有影响呢？</span></h5>
+<h4><span id="322-通过目录页索引页提高性能">3.2.2 通过目录页（索引页）提高性能</span></h4>
+<p>针对这个问题，既然问出来了，那么答案是肯定的，多页会对查询效率产生一定的影响，影响主要就体现在，多页其本质也是一个链表结构，只要是链表结构，查询效率一定不会高。</p>
+<p>假设数据又非常多条，数据库就会开辟非常多的新页，而这些新页就会像链表一样连接在一起，当我们要在这么多页中查询某条数据时，它还是会从头节点遍历到存在我们要查找的那条数据所存在的页上，我们好不容易通过页目录优化了页中数据的查询效率，现在又出现了以页为单位的链表，这不是前功尽弃了吗？</p>
+<p>我们对比页内数据区，来分析如何优化多页结构。在单页时，我们采用了页目录的目录项来指向一行数据，这条数据就是存在于这个目录项中的最小数据，那么就可以通过页目录来查找所需数据。</p>
+<p>所以对于多页结构也可以采用这种方式，使用一个目录项来指向某一页，而这个目录项存放的就是这一页中存放的最小数据的索引值。和页目录不同的地方在于，这种目录管理的级别是页，而页目录管理的级别是行。</p>
+<p>那么分析到这里，我们多页模式的结构就会是下图所示的这样：<br>
+<img src="./%E5%A4%9A%E9%A1%B5%E7%BB%93%E6%9E%842.png" alt="image.png"></p>
+<p>存在一个目录页来管理页目录，目录页中的数据存放的就是指向的那一页中最小的数据。</p>
+<p>这里要注意的一点是：其实目录页的本质也是页，普通页中存的数据是项目数据，而目录页中存的数据是普通页的地址。</p>
+<p>假设我们要查找id=19的数据，那么按照以前的查找方式，我们需要从第一页开始查找，发现不存在那么再到第二页查找，一直找到第四页才能找到id=19的数据</p>
+<p>但是如果有了目录页，就可以使用id=19与目录页中存放的数据进行比较，发现19大于任何一条数据，于是进入id=16指向的页进行查找，直接然后再通过页内的页目录行级别的数据的查找，很快就可以找到id为19的数据了。</p>
+<p>随着数据越来越多，这种结构的效率相对于普通的多页模式，优势也就越来越明显。</p>
+<p>回归正题，相信有对MySQL比较了解的同学已经发现了，我们画的最终的这幅图，就是MySQL中的一种索引结构——B+树。</p>
+<h2><span id="四-b树">四、B+树</span></h2>
+<p>我们接着往下聊，我们将我们画的存在目录页的多页模式图宏观化，可以形成下面的这张图：<br>
+<img src="./%E5%A4%9A%E9%A1%B5%E7%BB%93%E6%9E%843.png" alt="image.png"><br>
+对于它的优势：</p>
+<blockquote>
+<ul>
+<li>由于叶子节点上存放了所有的数据，并且有指针相连，每个叶子节点在逻辑上是相连的，所以对于范围查找比较友好。</li>
+<li>B+树的所有数据都在叶子节点上，所以B+树的查询效率稳定，一般都是查询3次。</li>
+<li>B+树有利于数据库的扫描。</li>
+<li>B+树有利于磁盘的IO，因为他的层高基本不会因为数据扩大而增高（三层树结构大概可以存放两千万数据量。</li>
+</ul>
+</blockquote>
+<h2><span id="五-页的完整结构">五、页的完整结构</span></h2>
+<p>Page是Innodb存储的最基本结构，也是Innodb磁盘管理的最小单位，与数据库相关的所有内容都存储在Page结构里。Page分为几种类型：数据页（B-Tree Node），Undo页（Undo Log Page），系统页（System Page），事务数据页（Transaction System Page）等；每个数据页的大小为16kb，每个Page使用一个32位（一位表示的就是0或1）的int值来表示，正好对应Innodb最大64TB的存储容量(16kb * 2^32=64tib)<br>
+一个Page的基本结构如下：<br>
+<img src="./%E9%A1%B5%E5%9F%BA%E6%9C%AC%E7%BB%93%E6%9E%84.png" alt="页的基本结构"></p>
+<h3><span id="51-头部数据">5.1 头部数据</span></h3>
+<p>每个page都有通用的头和尾，但是中部的内容根据page的类型不同而发生变化，头部的数据如下：<br>
+<img src="./%E9%A1%B5%E5%A4%B4%E7%BB%93%E6%9E%84.png" alt="页头结构"><br>
+page头部保存了两个指针，分别指向前一个Page和后一个Page，头部还有Page的类型信息和用来唯一标识Page的编号。根据这个指针分布可以想象到Page链接起来就是一个双向链表<br>
+<img src="./%E9%A1%B5%E9%93%BE%E8%A1%A8%E7%BB%93%E6%9E%84.png" alt="链表结构"></p>
+<h3><span id="52-主体数据">5.2 主体数据</span></h3>
+<p>在Page的主体部分，主要关注数据和索引的存储，他们都位于User Records部分，User Records占据Page的大部分空间，User Records由一条条的Record组成，每条记录代表索引树上的一个节点（非叶子节点和叶子节点）；在一个单链表的内部，单链表的头尾由两条记录来表示，字符串形式的“ Infimum”代表开头，“Supremum”表示结尾；System Record 和 User Record是两个平行的段；<br>
+Innodb中存在四种不同的Record，分别是：</p>
+<ul>
+<li>主键索引树非叶子节点</li>
+<li>主键索引树叶子节点</li>
+<li>辅助键索引树非叶子节点</li>
+<li>辅助键索引树叶子节点</li>
+</ul>
+<p>这四种节点Record格式上有差异，但是内部都存储着Next指针指向下一个Record<br>
+<img src="./%E9%A1%B5%E8%AF%A6%E7%BB%86%E7%BB%93%E6%9E%84.png" alt="image.png"></p>
+<blockquote>
+<p>这里表达的几个核心点：1. User Record 和 System Record 是段；2. 每一个 User Record 代表索引树上的一个节点；3。 从图中可以看出，页包含着 User Record 和 System Record，所以页包含着段？（存疑）</p>
+</blockquote>
+<h4><span id="521-user-record">5.2.1 User Record</span></h4>
+<p>User Record在Page内以单链表的形式存在，最初数据是按照插入的先后顺序排列的，但是随着新数据的插入和旧数据的删除，数据物理顺序发生改变，但是他们依然保持着逻辑上的先后顺序<br>
+<img src="./%E9%A1%B5%E8%AF%A6%E7%BB%86%E7%BB%93%E6%9E%842.png" alt="image.png"></p>
+<p>把User Record组织形式和若干Page组织起来，就得到了稍微完整的形式：<br>
+<img src="./%E9%A1%B5%E9%93%BE%E8%A1%A8%E7%BB%93%E6%9E%842.png" alt="image.png"></p>
+<h2><span id="六-总结">六、总结</span></h2>
+<p>本篇讨论了几个关键点：</p>
+<ul>
+<li>页的基本概念和组成成分</li>
+<li>Mysql 是如何在单页内、多页间，针对不同的数据量，对数据操作性能的提升</li>
+<li>页与索引之间的关系</li>
+</ul>
+<p>如果本文由却是，或者解释不清的地方，还望在下方留言。大家一起交流，一起学习，一起进步。</p>
+<blockquote>
+<p>引用：<br>
+<a href="https://www.modb.pro/db/12468" target="_blank" rel="noopener">从头带你捋一遍 MySQL 索引结构，索引没你想的那么难！</a><br>
+<a href="https://segmentfault.com/a/1190000008545713" target="_blank" rel="noopener">mysql中InnoDB引擎中页的概念</a></p>
+</blockquote>
+
+                
+
+                <hr>
+                <!-- Pager -->
+                <ul class="pager">
+                    
+                        <li class="previous">
+                            <a href="/2020/02/16/Mysql-——-联合索引的最左匹配原则/" data-toggle="tooltip" data-placement="top" title="Mysql —— 联合索引的最左匹配原则">&larr; Previous Post</a>
+                        </li>
+                    
+                    
+                        <li class="next">
+                            <a href="/2017/03/18/hexo-theme-beantech/" data-toggle="tooltip" data-placement="top" title="[Hexo] Theme BeanTech">Next Post &rarr;</a>
+                        </li>
+                    
+                </ul>
+
+                <!-- duoshuo Share start -->
+                
+                <!-- 多说 Share end-->
+
+                <!-- 多说评论框 start -->
+                
+                <!-- 多说评论框 end -->
+
+                <!-- disqus comment start -->
+                
+                    <div class="comment">
+                        <div id="disqus_thread" class="disqus-thread"></div>
+                    </div>
+                
+                <!-- disqus comment end -->
+            </div>
+            
+            <!-- Tabe of Content -->
+            <!-- Table of Contents -->
+
+    
+      <aside id="sidebar">
+        <div id="toc" class="toc-article">
+        <strong class="toc-title">Contents</strong>
+        
+          <ol class="toc-nav"><li class="toc-nav-item toc-nav-level-2"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">1.</span> <span class="toc-nav-text">一、前言</span></a></li><li class="toc-nav-item toc-nav-level-2"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">2.</span> <span class="toc-nav-text">二、页的引入</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">2.1.</span> <span class="toc-nav-text">2.1 从一个简单的表开始</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-5"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">2.1.0.1.</span> <span class="toc-nav-text">为什么会出现MySQL在我们没有显式排序的情况下，默默帮我们排了序呢？它是在什么时候进行排序的？</span></a></li></ol></li></ol></li><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">2.2.</span> <span class="toc-nav-text">2.2 页的引入</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-5"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">2.2.0.1.</span> <span class="toc-nav-text">那么说到这里，其实可以回答第一个问题了，MySQL实际上就是在我们插入数据的时候，就帮我们在页中排好了序，至于为什么要排序，这里先卖个关子，接着往下看。</span></a></li></ol></li></ol></li></ol></li><li class="toc-nav-item toc-nav-level-2"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.</span> <span class="toc-nav-text">三、 排序对性能的提升</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.1.</span> <span class="toc-nav-text">3.1 单页内对性能的提升</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-4"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.1.1.</span> <span class="toc-nav-text">3.1.1 Mysql保证插入时对 id 有序</span></a></li><li class="toc-nav-item toc-nav-level-4"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.1.2.</span> <span class="toc-nav-text">3.1.2 通过页中的目录来提高查询效率</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-5"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.1.2.1.</span> <span class="toc-nav-text">所以看到这里，大家应该明白第二个问题了，为什么数据库在插入时会进行排序，这才是真正发挥排序的作用的地方。</span></a></li></ol></li></ol></li><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.2.</span> <span class="toc-nav-text">3.2 多个页对性能的提升</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-4"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.2.1.</span> <span class="toc-nav-text">3.2.1 Mysql对多个页的组织关系</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-5"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.2.1.1.</span> <span class="toc-nav-text">需要注意的是：在开辟新页的时候，我们插入的数据不一定是放在新开辟的页上，而是要进行所有页的数据比较，来决定这条插入的数据放在哪一页上，而完成数据插入之后，最终的多页结构就会像上图中画的那样。</span></a></li><li class="toc-nav-item toc-nav-level-5"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.2.1.2.</span> <span class="toc-nav-text">那么可以思考第四个问题：多页情况下是否对查询效率有影响呢？</span></a></li></ol></li><li class="toc-nav-item toc-nav-level-4"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.2.2.</span> <span class="toc-nav-text">3.2.2 通过目录页（索引页）提高性能</span></a></li></ol></li></ol></li><li class="toc-nav-item toc-nav-level-2"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">4.</span> <span class="toc-nav-text">四、B+树</span></a></li><li class="toc-nav-item toc-nav-level-2"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">5.</span> <span class="toc-nav-text">五、页的完整结构</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">5.1.</span> <span class="toc-nav-text">5.1 头部数据</span></a></li><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">5.2.</span> <span class="toc-nav-text">5.2 主体数据</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-4"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">5.2.1.</span> <span class="toc-nav-text">5.2.1 User Record</span></a></li></ol></li></ol></li><li class="toc-nav-item toc-nav-level-2"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">6.</span> <span class="toc-nav-text">六、总结</span></a></li></ol>
+        
+        </div>
+      </aside>
+    
+
+                
+            <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <!-- no hr -->
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                       
+                          <a class="tag" href="/tags/#Mysql" title="Mysql">Mysql</a>
+                        
+                    </div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+
+                    
+                        <li><a href="http://beantech.org" target="_blank">Bean Tech</a></li>
+                    
+                        <li><a href="http://blog.kaijun.rocks" target="_blank">Kaijun&#39;s Blog</a></li>
+                    
+                        <li><a href="http://huangxuan.me" target="_blank">Hux Blog</a></li>
+                    
+                        <li><a href="#" target="_blank">It Helps SEO</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<!-- disqus embedded js code start (one page only need to embed once) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "your-disqus-ID";
+    var disqus_identifier = "http://https://dongbaowen.github.io/2020/02/16/Mysql —— 页与索引/";
+    var disqus_url = "http://https://dongbaowen.github.io/2020/02/16/Mysql —— 页与索引/";
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus embedded js code start end -->
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("https://cdn.bootcss.com/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'hover',
+          placement: 'left',
+          icon: 'ℬ'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+
+    <!-- Footer -->
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                
+                
+                
+
+                
+
+                
+                    <li>
+                        <a target="_blank" href="https://www.facebook.com/dongbaowen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://github.com/dongbaowen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://www.linkedin.com/in/yu-hsuan-yen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; 董宝文 2020 
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> 
+                    <span style="display: inline-block; margin: 0 5px;">
+                        <i class="fa fa-heart"></i>
+                    </span> 
+                    re-Ported by <a href="http://beantech.org">BeanTech</a> | 
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=YenYuHsuan&repo=hexo-theme-beantech&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js"></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js"></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async("http://https://dongbaowen.github.io/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("https://cdn.bootcss.com/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-XXXXXXXX-X';
+    var _gaDomain = 'yoursite';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+
+
+	<a id="rocket" href="#top" class=""></a>
+	<script type="text/javascript" src="/js/totop.js?v=1.0.0" async=""></script>
+    <script type="text/javascript" src="/js/toc.js?v=1.0.0" async=""></script>
+<!-- Image to hack wechat -->
+<img src="http://https://dongbaowen.github.io/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

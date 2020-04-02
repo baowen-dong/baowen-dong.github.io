@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head tag -->
+<head><meta name="generator" content="Hexo 3.9.0">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content>
+    <meta name="keyword" content>
+    <link rel="shortcut icon" href="/img/ironman-draw.png">
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <title>
+        
+          ReentrantLock(2) —— 非公平模式加锁流程 - Baowen Dong | 董宝文
+        
+    </title>
+
+    <link rel="canonical" href="http://https://dongbaowen.github.io/2020/02/16/ReentrantLock-2-——-非公平模式加锁流程/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS --> 
+    <link rel="stylesheet" href="/css/beantech.min.css">
+    
+    <!-- Pygments Highlight CSS -->
+    <link rel="stylesheet" href="/css/highlight.css">
+
+    <link rel="stylesheet" href="/css/widget.css">
+
+    <link rel="stylesheet" href="/css/rocket.css">
+
+    <link rel="stylesheet" href="/css/signature.css">
+
+    <link rel="stylesheet" href="/css/toc.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="https://cdn.staticfile.org/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+	<!-- Modified by Yu-Hsuan Yen -->
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        
+            background-image: url('Demo.png')
+            /*post*/
+        
+    }
+    
+    #signature{
+        background-image: url('/img/signature/BeanTechSign-white.png');
+    }
+    
+</style>
+
+<header class="intro-header" >
+    <!-- Signature -->
+    <div id="signature">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                
+                    <div class="post-heading">
+                        <div class="tags">
+                            
+                              <a class="tag" href="/tags/#并发与多线程" title="并发与多线程">并发与多线程</a>
+                            
+                        </div>
+                        <h1>ReentrantLock(2) —— 非公平模式加锁流程</h1>
+                        <h2 class="subheading">ReentrantLock中非公平模式加锁流程解析</h2>
+                        <span class="meta">
+                            Posted by 董宝文 on
+                            2020-02-16
+                        </span>
+                    </div>
+                
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+	
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Baowen Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+
+                    
+
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/about/">About</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/archive/">Archives</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/tags/">Tags</a>
+                        </li>
+                        
+                    
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        // CLOSE
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        // OPEN
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+    <!-- Main Content -->
+    <!-- Modify by Yu-Hsuan Yen -->
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+            <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+                <p>我们再来看 ReentrantLock，加锁流程从 lock.lock() 开始</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">lock</span>(<span class="params"></span>)</span> &#123;</span><br><span class="line">    sync.<span class="keyword">lock</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>进入该源码,正确找到sycn的实现类后可以看到真正有内容的入口方法。</p>
+<h3><span id="1-加锁流程真正意义上的入口">1、加锁流程真正意义上的入口</span></h3>
+<p>因为这里讲解的是非公平锁，所以来看 NonfairSync 类：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Performs lock.  Try immediate barge, backing up to normal</span></span><br><span class="line"><span class="comment"> * acquire on failure.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line">    static <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">NonfairSync</span> <span class="keyword">extends</span> <span class="title">Sync</span> </span>&#123;</span><br><span class="line">      <span class="keyword">private</span> static <span class="keyword">final</span> long serialVersionUID = <span class="number">7316153563782823691</span>L;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * Performs lock.  Try immediate barge, backing up to normal</span></span><br><span class="line"><span class="comment">         * acquire on failure.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="comment">//加锁流程真正意义上的入口</span></span><br><span class="line">        <span class="keyword">final</span> void lock() &#123;</span><br><span class="line">            <span class="comment">//以cas方式尝试将AQS中的state从0更新为1</span></span><br><span class="line">            <span class="keyword">if</span> (compareAndSetState(<span class="number">0</span>, <span class="number">1</span>))</span><br><span class="line">                <span class="comment">//获取锁成功则将当前线程标记为持有锁的线程,然后直接返回</span></span><br><span class="line">                setExclusiveOwnerThread(<span class="type">Thread</span>.currentThread());</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                acquire(<span class="number">1</span>);<span class="comment">//获取锁失败则执行该方法</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">protected</span> <span class="keyword">final</span> boolean tryAcquire(int acquires) &#123;</span><br><span class="line">            <span class="keyword">return</span> nonfairTryAcquire(acquires);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>首先尝试快速获取锁,以cas的方式将state的值更新为1,只有当state的原值为0时更新才能成功,因为state在ReentrantLock的语境下等同于锁被线程重入的次数,这意味着只有当前锁未被任何线程持有时该动作才会返回成功。若获取锁成功,则将当前线程标记为持有锁的线程,然后整个加锁流程就结束了。<br>
+若获取锁失败,则执行acquire方法，acquire 方法是AQS中的方法。</p>
+<blockquote>
+<p>自我理解：一上来首先通过 CAS 来进行获取锁，如果 CAS 原子操作成功，则将当前线程标记为持有锁的线程。；如果CAS 失败，则调用 acquire 方法继续进行获取锁。<br>
+如果一上来就获取锁成功，是不需要创建Node的。</p>
+</blockquote>
+<figure class="highlight dart"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"><span class="markdown">/**</span></span></span><br><span class="line"><span class="comment"><span class="markdown"><span class="bullet"> * </span>Acquires in exclusive mode, ignoring interrupts.  Implemented</span></span></span><br><span class="line"><span class="comment"><span class="markdown"><span class="bullet"> * </span>by invoking at least once &#123;@link #tryAcquire&#125;,</span></span></span><br><span class="line"><span class="comment"><span class="markdown"><span class="bullet"> * </span>returning on success.  Otherwise </span>the<span class="markdown"> thread is queued, possibly</span></span></span><br><span class="line"><span class="comment"><span class="markdown"><span class="bullet"> * </span>repeatedly blocking and unblocking, invoking &#123;@link</span></span></span><br><span class="line"><span class="comment"><span class="markdown"><span class="bullet"> * </span>#tryAcquire&#125; until success.  This method can be used</span></span></span><br><span class="line"><span class="comment"><span class="markdown"><span class="bullet"> * </span>to implement method &#123;@link Lock#lock&#125;.</span></span></span><br><span class="line"><span class="comment"><span class="markdown"> *</span></span></span><br><span class="line"><span class="comment"><span class="markdown"><span class="bullet"> * </span>@param arg </span>the<span class="markdown"> acquire argument.  This value is conveyed to</span></span></span><br><span class="line"><span class="comment"><span class="markdown"><span class="bullet"> *        </span>&#123;@link #tryAcquire&#125; </span>but<span class="markdown"> is otherwise uninterpreted and</span></span></span><br><span class="line"><span class="comment"><span class="markdown"><span class="bullet"> *        </span>can represent anything </span>you<span class="markdown"> </span>like<span class="markdown">.</span></span></span><br><span class="line"><span class="comment"><span class="markdown"> */</span></span></span><br><span class="line">public <span class="keyword">final</span> <span class="keyword">void</span> acquire(<span class="built_in">int</span> arg) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!tryAcquire(arg) &amp;&amp;</span><br><span class="line">        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))</span><br><span class="line">        selfInterrupt();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该方法主要的逻辑都在 if 判断条件中,这里面有3个重要的方法tryAcquire()，addWaiter()和acquireQueued()，这三个方法中分别封装了加锁流程中的主要处理逻辑，理解了这三个方法到底做了哪些事情，整个加锁流程就清晰了。</p>
+<h3><span id="2-尝试获取锁的通用方法tryacquire">2 尝试获取锁的通用方法:tryAcquire()</span></h3>
+<p>tryAcquire是AQS中定义的钩子方法,如下所示</p>
+<figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">tryAcquire</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该方法默认会抛出异常,强制同步组件通过扩展AQS来实现同步功能的时候必须重写该方法,ReentrantLock在公平和非公平模式下对此有不同实现,非公平模式的实现如下：</p>
+<figure class="highlight aspectj"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="function"><span class="keyword">boolean</span> <span class="title">tryAcquire</span><span class="params">(<span class="keyword">int</span> acquires)</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">return</span> <span class="title">nonfairTryAcquire</span><span class="params">(acquires)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>底层调用了nonfairTryAcquire()<br>
+从方法名上我们就可以知道这是非公平模式下尝试获取锁的方法,具体方法实现如下</p>
+<figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Performs non-fair tryLock.  tryAcquire is implemented in</span></span><br><span class="line"><span class="comment"> * subclasses, but both need nonfair try for trylock method.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">nonfairTryAcquire</span><span class="params">(<span class="keyword">int</span> acquires)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> Thread current = Thread.currentThread();<span class="comment">//获取当前线程实例</span></span><br><span class="line">    <span class="keyword">int</span> c = getState();<span class="comment">//获取state变量的值,即当前锁被重入的次数</span></span><br><span class="line">    <span class="keyword">if</span> (c == <span class="number">0</span>) &#123;   <span class="comment">//state为0,说明当前锁未被任何线程持有</span></span><br><span class="line">        <span class="keyword">if</span> (compareAndSetState(<span class="number">0</span>, acquires)) &#123; <span class="comment">//以cas方式获取锁</span></span><br><span class="line">            setExclusiveOwnerThread(current);  <span class="comment">//将当前线程标记为持有锁的线程</span></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;<span class="comment">//获取锁成功,非重入</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (current == getExclusiveOwnerThread()) &#123; <span class="comment">//当前线程就是持有锁的线程,说明该锁被重入了</span></span><br><span class="line">        <span class="keyword">int</span> nextc = c + acquires;<span class="comment">//计算state变量要更新的值</span></span><br><span class="line">        <span class="keyword">if</span> (nextc &lt; <span class="number">0</span>) <span class="comment">// overflow</span></span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">"Maximum lock count exceeded"</span>);</span><br><span class="line">        setState(nextc);<span class="comment">//非同步方式更新state值</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;  <span class="comment">//获取锁成功,重入</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;     <span class="comment">//走到这里说明尝试获取锁失败</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这是非公平模式下获取锁的通用方法。它囊括了当前线程在尝试获取锁时的所有可能情况：</p>
+<ol>
+<li>当前锁未被任何线程持有(state=0),则以cas方式获取锁,若获取成功则设置exclusiveOwnerThread为当前线程,然后返回成功的结果；若cas失败,说明在得到state=0和cas获取锁之间有其他线程已经获取了锁,返回失败结果。</li>
+<li>若锁已经被当前线程获取(state&gt;0,exclusiveOwnerThread为当前线程),则将锁的重入次数加1(state+1),然后返回成功结果。因为该线程之前已经获得了锁,所以这个累加操作不用同步。</li>
+<li>若当前锁已经被其他线程持有(state&gt;0,exclusiveOwnerThread不为当前线程),则直接返回失败结果</li>
+</ol>
+<p>因为我们 <strong>用state来统计锁被线程重入的次数,</strong> 所以当前线程尝试获取锁的操作是否成功可以简化为:state值是否成功累加1,是则尝试获取锁成功,否则尝试获取锁失败。</p>
+<p>其实这里还可以思考一个问题:nonfairTryAcquire已经实现了一个囊括所有可能情况的尝试获取锁的方式,为何在刚进入lock方法时还要通过compareAndSetState(0, 1)去获取锁,毕竟后者只有在锁未被任何线程持有时才能执行成功,我们完全可以把compareAndSetState(0, 1)去掉,对最后的结果不会有任何影响。这种在进行通用逻辑处理之前针对某些特殊情况提前进行处理的方式在后面还会看到,一个直观的想法就是它能提升性能，而代价是牺牲一定的代码简洁性。</p>
+<p>退回到上层的acquire方法,</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">acquire</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!tryAcquire(arg) &amp;&amp;  <span class="comment">//当前线程尝试获取锁,若获取成功返回true,否则false</span></span><br><span class="line">        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))  <span class="comment">//只有当前线程获取锁失败才会执行者这部分代码</span></span><br><span class="line">        selfInterrupt();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>tryAcquire(arg)返回成功,则说明当前线程成功获取了锁(第一次获取或者重入),由取反和&amp;&amp;可知,整个流程到这结束，只有当前线程获取锁失败才会执行后面的判断。先来看addWaiter(Node.EXCLUSIVE)<br>
+部分,这部分代码描述了当线程获取锁失败时如何安全的加入同步等待队列。这部分代码可以说是整个加锁流程源码的精华,充分体现了并发编程的艺术性。</p>
+<h3><span id="3-获取锁失败的线程如何安全的加入同步队列addwaiter">3 获取锁失败的线程如何安全的加入同步队列:addWaiter()</span></h3>
+<p>####3.1 代码解读</p>
+<h5><span id="添加节点到队列中">添加节点到队列中</span></h5>
+<p>这部分逻辑在addWaiter()方法中</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * Creates <span class="keyword">and</span> enqueues <span class="keyword">node</span> <span class="title">for</span> current thread <span class="keyword">and</span> given mode.</span><br><span class="line"> *</span><br><span class="line"> * @param mode <span class="keyword">Node</span>.<span class="title">EXCLUSIVE</span> for exclusive, <span class="keyword">Node</span>.<span class="title">SHARED</span> for shared</span><br><span class="line"> * @return the new <span class="keyword">node</span><span class="title"></span></span><br><span class="line"><span class="title"> */</span></span><br><span class="line"><span class="title">private</span> <span class="keyword">Node</span> <span class="title">addWaiter</span>(<span class="keyword">Node</span> <span class="title">mode</span>) &#123;</span><br><span class="line">    <span class="keyword">Node</span> <span class="title">node</span> = new <span class="keyword">Node</span><span class="title">(Thread</span>.currentThread(), mode);//首先创建一个新节点,并将当前线程实例封装在内部,mode这里为null</span><br><span class="line">    // Try the fast path of enq; backup to full enq on failure</span><br><span class="line">    <span class="keyword">Node</span> <span class="title">pred</span> = tail;</span><br><span class="line">    if (pred != null) &#123;</span><br><span class="line">        <span class="keyword">node</span>.<span class="title">prev</span> = pred;</span><br><span class="line">        if (compareAndSetTail(pred, <span class="keyword">node</span><span class="title">)) &#123;</span></span><br><span class="line"><span class="title">            pred</span>.next = <span class="keyword">node</span><span class="title">;</span></span><br><span class="line"><span class="title">            return</span> <span class="keyword">node</span><span class="title">;</span></span><br><span class="line"><span class="title">        &#125;</span></span><br><span class="line"><span class="title">    &#125;</span></span><br><span class="line"><span class="title">    enq</span>(<span class="keyword">node</span><span class="title">);//入队的逻辑这里都有</span></span><br><span class="line"><span class="title">    return</span> <span class="keyword">node</span><span class="title">;</span></span><br><span class="line"><span class="title">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>首先创建了一个新节点,并将当前线程实例封装在其内部,之后我们直接看enq(node)方法就可以了,中间这部分逻辑在enq(node)中都有,之所以加上这部分“重复代码”和尝试获取锁时的“重复代码”一样,对某些特殊情况进行提前处理,牺牲一定的代码可读性换取性能提升。</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * Inserts <span class="keyword">node</span> <span class="title">into</span> queue, initializing if necessary. See picture above.</span><br><span class="line"> * @param <span class="keyword">node</span> <span class="title">the</span> <span class="keyword">node</span> <span class="title">to</span> insert</span><br><span class="line"> * @return <span class="keyword">node</span><span class="title">'s</span> predecessor</span><br><span class="line"> */</span><br><span class="line">private <span class="keyword">Node</span> <span class="title">enq</span>(final <span class="keyword">Node</span> <span class="title">node</span>) &#123;</span><br><span class="line">    for (;;) &#123;</span><br><span class="line">        <span class="keyword">Node</span> <span class="title">t</span> = tail;//t指向当前队列的最后一个节点,队列为空则为null</span><br><span class="line">        if (t == null) &#123; // Must initialize  //队列为空</span><br><span class="line">            if (compareAndSetHead(new <span class="keyword">Node</span><span class="title">())) //构造新结点,CAS</span>方式设置为队列首元素,当<span class="attr">head=</span>=null时更新成功</span><br><span class="line">                tail = head;//尾指针指向首结点</span><br><span class="line">        &#125; else &#123;  //队列不为空</span><br><span class="line">            <span class="keyword">node</span>.<span class="title">prev</span> = t;</span><br><span class="line">            if (compareAndSetTail(t, <span class="keyword">node</span><span class="title">)) &#123; //CAS</span>将尾指针指向当前结点,当t(原来的尾指针)==tail(当前真实的尾指针)时执行成功</span><br><span class="line">                t.next = <span class="keyword">node</span><span class="title">;    //原尾结点的next</span>指针指向当前结点</span><br><span class="line">                return t;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里有两个CAS操作:<br>
+compareAndSetHead(new Node()),CAS方式更新head指针,仅当原值为null时更新成功</p>
+<figure class="highlight aspectj"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * CAS head field. Used only by enq.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="function"><span class="keyword">boolean</span> <span class="title">compareAndSetHead</span><span class="params">(Node update)</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">return</span> unsafe.<span class="title">compareAndSwapObject</span><span class="params">(<span class="keyword">this</span>, headOffset, <span class="keyword">null</span>, update)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>compareAndSetTail(t, node),CAS方式更新tial指针,仅当原值为t时更新成功</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * CAS tail field. Used only by enq.</span><br><span class="line"> */</span><br><span class="line">private final boolean compareAndSetTail(<span class="keyword">Node</span> <span class="title">expect</span>, <span class="keyword">Node</span> <span class="title">update</span>) &#123;</span><br><span class="line">    return unsafe.compareAndSwapObject(this, tailOffset, expect, update);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>外层的for循环保证了所有获取锁失败的线程经过失败重试后最后都能加入同步队列。因为AQS的同步队列是不带哨兵结点的,故当队列为空时要进行特殊处理,这部分在if分句中。注意当前线程所在的结点不能直接插入空队列,因为阻塞的线程是由前驱结点进行唤醒的。故先要插入一个结点作为队列首元素,当锁释放时由它来唤醒后面被阻塞的线程,从逻辑上这个队列首元素也可以表示当前正获取锁的线程,虽然并不一定真实持有其线程实例。</p>
+<p>首先通过new Node()创建一个空结点，然后以CAS方式让头指针指向该结点 <strong>(该结点并非当前线程所在的结点)</strong>，若该操作成功,则将尾指针也指向该结点。这部分的操作流程可以用下图表示</p>
+<p><img src="./1.png" alt="1422237-20180805183957849-785041089.png"></p>
+<p>当队列不为空,则执行通用的入队逻辑,这部分在else分句中</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">else &#123;</span><br><span class="line">    <span class="keyword">node</span>.<span class="title">prev</span> = t;//step1:待插入结点pre指针指向原尾结点</span><br><span class="line">    if (compareAndSetTail(t, <span class="keyword">node</span><span class="title">)) &#123; step2</span>:CAS方式更改尾指针</span><br><span class="line">        t.next = <span class="keyword">node</span><span class="title">; //原尾结点next</span>指针指向新的结点</span><br><span class="line">        return t;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先当前线程所在的结点的前向指针pre指向当前线程认为的尾结点,源码中用t表示。然后以CAS的方式将尾指针指向当前结点,该操作仅当tail=t,即尾指针在进行CAS前未改变时成功。若CAS执行成功,则将原尾结点的后向指针next指向新的尾结点。整个过程如下图所示</p>
+<p><img src="./2.png" alt="image.png"></p>
+<p>####3.2 多思考一步：<br>
+整个入队的过程并不复杂,是典型的CAS加失败重试的乐观锁策略。其中只有更新头指针和更新尾指针这两步进行了CAS同步,可以预见高并发场景下性能是非常好的。但是本着质疑精神我们不禁会思考下这么做真的线程安全吗？<br>
+<img src="./3.png" alt="image.png"></p>
+<ol>
+<li>队列为空的情况:<br>
+因为队列为空,故head=tail=null,假设线程执行2成功,则在其执行3之前,因为tail=null,其他进入该方法的线程因为head不为null将在2处不停的失败,所以3即使没有同步也不会有线程安全问题。</li>
+<li>队列不为空的情况:<br>
+假设线程执行5成功,则此时4的操作必然也是正确的(当前结点的prev指针确实指向了队列尾结点,换句话说tail指针没有改变,如若不然5必然执行失败),又因为4执行成功,当前节点在队列中的次序已经确定了,所以6何时执行对线程安全不会有任何影响,比如下面这种情况<br>
+<img src="./4.png" alt="image.png"></li>
+</ol>
+<p>为了确保真的理解了它,可以思考这个问题:把enq方法图中的4放到5之后,整个入队的过程还线程安全吗？<br>
+到这为止,获取锁失败的线程加入同步队列的逻辑就结束了。但是线程加入同步队列后会做什么我们并不清楚,这部分在acquireQueued方法中</p>
+<p>####3.3 几个疑问<br>
+######有一个地方比较特殊：<br>
+在上方的 enq 方法中，我们假如A线程是首次获取锁的线程，当A线程首先获取锁时，此时并没有创建头结点。在A线程未释放锁，当第二条B线程再来获取锁时需要添加进队列，发现队列为空，就创建了一个不包含 Thread 的 <strong>空节点</strong> 作为 head，然后将自己追加到这个节点之后作为后继节点。</p>
+<p>######为什么要创建一个空的节点作为头结点？而不是直接将当前线程节点作为头结点呢？</p>
+<ul>
+<li>A线程获取锁后，无需创建节点。对A而言，它是第一个成功获取到锁的，就算创建了头结点，在释放的时候头结点也会消失，可能考虑到节省一个Node的创建成本</li>
+<li>为什么第二条线程加入队列时，要创建一个空节点作为 head？<br>
+个人猜测是这样的：解锁过程是获取头结点，然后释放头结点的后继节点。因为当时第一条线程获取锁后并没有创建节点（当然也无需创建节点），如果第二条线程进入队列后为头结点，那么在第一条线程释放的时候，刚好绕过了第二条线程。当然这个在解锁的时候才会明白。</li>
+</ul>
+<h3><span id="4-线程加入同步队列后会做什么acquirequeued">4、线程加入同步队列后会做什么:acquireQueued()</span></h3>
+<p>####4.1 源码解读</p>
+<h5><span id="加入队列后处理">加入队列后处理</span></h5>
+<p>先看acquireQueued方法的源码</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * Acquires <span class="keyword">in</span> exclusive uninterruptible mode for thread already <span class="keyword">in</span></span><br><span class="line"> * queue. Used by condition wait methods as well as acquire.</span><br><span class="line"> *</span><br><span class="line"> * @param <span class="keyword">node</span> <span class="title">the</span> <span class="keyword">node</span><span class="title"></span></span><br><span class="line"><span class="title"> * @param</span> arg the acquire argument</span><br><span class="line"> * @return &#123;@code <span class="literal">true</span>&#125; if interrupted while waiting</span><br><span class="line"> */</span><br><span class="line">final boolean acquireQueued(final <span class="keyword">Node</span> <span class="title">node</span>, int arg) &#123;</span><br><span class="line">    boolean failed = <span class="literal">true</span>;</span><br><span class="line">    try &#123;</span><br><span class="line">        boolean interrupted = <span class="literal">false</span>;</span><br><span class="line">        //死循环,正常情况下线程只有获得锁才能跳出循环</span><br><span class="line">        for (;;) &#123;</span><br><span class="line">            final <span class="keyword">Node</span> <span class="title">p</span> = <span class="keyword">node</span>.<span class="title">predecessor</span>();//获得当前线程所在结点的前驱结点</span><br><span class="line">            //第一个if分句</span><br><span class="line">            if (p == head &amp;&amp; tryAcquire(arg)) &#123; </span><br><span class="line">                setHead(<span class="keyword">node</span><span class="title">); //将当前结点设置为队列头结点</span></span><br><span class="line"><span class="title">                p</span>.next = null; // help GC</span><br><span class="line">                failed = <span class="literal">false</span>;</span><br><span class="line">                return interrupted;//正常情况下死循环唯一的出口</span><br><span class="line">            &#125;</span><br><span class="line">            //第二个if分句</span><br><span class="line">            if (shouldParkAfterFailedAcquire(p, <span class="keyword">node</span><span class="title">) &amp;&amp;  //判断是否要阻塞当前线程</span></span><br><span class="line"><span class="title">                parkAndCheckInterrupt</span>())      //阻塞当前线程</span><br><span class="line">                interrupted = <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">        if (failed)</span><br><span class="line">            cancelAcquire(<span class="keyword">node</span><span class="title">);</span></span><br><span class="line"><span class="title">    &#125;</span></span><br><span class="line"><span class="title">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>这段代码主要的内容都在for循环中,这是一个死循环,主要有两个if分句构成。第一个if分句中,当前线程首先会判断前驱结点是否是头结点,如果是则尝试获取锁,获取锁成功则会设置当前结点为头结点(更新头指针)。为什么必须前驱结点为头结点才尝试去获取锁？因为头结点表示当前正占有锁的线程,正常情况下该线程释放锁后会通知后面结点中阻塞的线程,阻塞线程被唤醒后去获取锁,这是我们希望看到的。然而还有一种情况,就是前驱结点取消了等待,此时当前线程也会被唤醒,这时候就不应该去获取锁,而是往前回溯一直找到一个没有取消等待的结点,然后将自身连接在它后面。一旦我们成功获取了锁并成功将自身设置为头结点,就会跳出for循环。否则就会执行第二个if分句:确保前驱结点的状态为SIGNAL,然后阻塞当前线程。</p>
+<blockquote>
+<p>个人理解：这个for循环是自旋的另一部分，走进这个 for 循环的线程，将不断地在 “尝试获取锁” -&gt; “更新前驱节点状态” -&gt; “阻塞当前线程” -&gt; “当前线程被唤醒” -&gt; “尝试获取锁” 的过程中轮回。一直到成功获取锁，才会走出这个轮回。</p>
+</blockquote>
+<p>从“if (p == head &amp;&amp; tryAcquire(arg)) ”这行代码可以看出：</p>
+<ul>
+<li>head的意义是正持有锁的节点。从代码中得知，如果前驱结点是头结点，并且当前节点获取锁失败了，是不会变更 head 的，而是会判断是否需要去阻塞；假如当前节点获取锁成功了，才会将当前节点更新成 head，并且释放前驱结点的所有引用，因为前驱结点已经执行完毕并释放锁了，无需再在队列中存在了</li>
+<li>只有在前驱结点是头结点的时候，当前节点才会去尝试获取锁，否则直接阻塞。此过程保证了队列的公平性，排队去尝试获取锁。</li>
+</ul>
+<h5><span id="是否需要阻塞当前线程">是否需要阻塞当前线程</span></h5>
+<p>先来看shouldParkAfterFailedAcquire(p, node)，从方法名上我们可以大概猜出这是判断是否要阻塞当前线程的,方法内容如下</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * Checks <span class="keyword">and</span> updates status for a <span class="keyword">node</span> <span class="title">that</span> failed to acquire.</span><br><span class="line"> * Returns <span class="literal">true</span> if thread should block. This is the main signal</span><br><span class="line"> * control <span class="keyword">in</span> all acquire loops.  Requires that pred == <span class="keyword">node</span>.<span class="title">prev</span>.</span><br><span class="line"> *</span><br><span class="line"> * @param pred <span class="keyword">node</span><span class="title">'s</span> predecessor holding status</span><br><span class="line"> * @param <span class="keyword">node</span> <span class="title">the</span> <span class="keyword">node</span><span class="title"></span></span><br><span class="line"><span class="title"> * @return</span> &#123;@code <span class="literal">true</span>&#125; if thread should block</span><br><span class="line"> */</span><br><span class="line">private static boolean shouldParkAfterFailedAcquire(<span class="keyword">Node</span> <span class="title">pred</span>, <span class="keyword">Node</span> <span class="title">node</span>) &#123;</span><br><span class="line">    int ws = pred.waitStatus;</span><br><span class="line">    if (ws == <span class="keyword">Node</span>.<span class="title">SIGNAL</span>) //状态为SIGNAL</span><br><span class="line"></span><br><span class="line">        /*</span><br><span class="line">         * This <span class="keyword">node</span> <span class="title">has</span> already set status asking a release</span><br><span class="line">         * to signal it, so it can safely park.</span><br><span class="line">         */</span><br><span class="line">        return <span class="literal">true</span>;</span><br><span class="line">    if (ws &gt; <span class="number">0</span>) &#123; //状态为CANCELLED,</span><br><span class="line">        /*</span><br><span class="line">         * Predecessor was cancelled. Skip over predecessors <span class="keyword">and</span></span><br><span class="line">         * indicate retry.</span><br><span class="line">         */</span><br><span class="line">        do &#123;</span><br><span class="line">            <span class="keyword">node</span>.<span class="title">prev</span> = pred = pred.prev;</span><br><span class="line">        &#125; while (pred.waitStatus &gt; <span class="number">0</span>);</span><br><span class="line">        pred.next = <span class="keyword">node</span><span class="title">;</span></span><br><span class="line"><span class="title">    &#125; else</span> &#123; //状态为初始化状态(ReentrentLock语境下)</span><br><span class="line">        /*</span><br><span class="line">         * waitStatus must be <span class="number">0</span> <span class="keyword">or</span> PROPAGATE.  Indicate that we</span><br><span class="line">         * need a signal, but don't park yet.  Caller will need to</span><br><span class="line">         * retry to make sure it cannot acquire before parking.</span><br><span class="line">         */</span><br><span class="line">        compareAndSetWaitStatus(pred, ws, <span class="keyword">Node</span>.<span class="title">SIGNAL</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    return <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到针对前驱结点pred的状态会进行不同的处理</p>
+<ol>
+<li>pred状态为SIGNAL,则返回true,表示要阻塞当前线程。</li>
+<li>pred状态为CANCELLED,则一直往队列头部回溯直到找到一个状态不为CANCELLED的结点,将当前节点node挂在这个结点的后面。</li>
+<li>pred的状态为初始化状态,此时通过compareAndSetWaitStatus(pred, ws, Node.SIGNAL)方法将pred的状态改为SIGNAL。<br>
+其实这个方法的含义很简单,就是确保当前结点的前驱结点的状态为SIGNAL,SIGNAL意味着线程释放锁后会唤醒后面阻塞的线程。毕竟,只有确保能够被唤醒，当前线程才能放心的阻塞。</li>
+</ol>
+<p>但是要注意只有在前驱结点已经是SIGNAL状态后才会执行后面的方法立即阻塞,对应上面的第一种情况。其他两种情况则因为返回false而重新执行一遍for循环。这种延迟阻塞其实也是一种高并发场景下的优化,试想我如果在重新执行循环的时候成功获取了锁,是不是线程阻塞唤醒的开销就省了呢？</p>
+<h5><span id="阻塞当前线程">阻塞当前线程</span></h5>
+<p>最后我们来看看阻塞线程的方法parkAndCheckInterrupt<br>
+shouldParkAfterFailedAcquire返回true表示应该阻塞当前线程,则会执行parkAndCheckInterrupt方法,这个方法比较简单,底层调用了LockSupport来阻塞当前线程,源码如下:</p>
+<figure class="highlight smali"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * Convenience method to park<span class="built_in"> and </span>then<span class="built_in"> check </span>if interrupted</span><br><span class="line"> *</span><br><span class="line"> * @return &#123;@code true&#125;<span class="built_in"> if </span>interrupted</span><br><span class="line"> */</span><br><span class="line">private<span class="keyword"> final</span> boolean parkAndCheckInterrupt() &#123;</span><br><span class="line">    LockSupport.park(this);</span><br><span class="line">   <span class="built_in"> return </span>Thread.interrupted();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该方法内部通过调用LockSupport的park方法来阻塞当前线程,不清楚LockSupport的可以看看这里。</p>
+<blockquote>
+<p><a href="https://www.cnblogs.com/takumicx/p/9328459.html" target="_blank" rel="noopener">阻塞和唤醒线程——LockSupport功能简介及原理浅析</a></p>
+</blockquote>
+<p>下面通过一张流程图来说明线程从加入同步队列到成功获取锁的过程<br>
+<img src="./5.png" alt="获取锁的过程.png"></p>
+<p>概括的说,线程在同步队列中会尝试获取锁,失败则被阻塞,被唤醒后会不停的重复这个过程,直到线程真正持有了锁,并将自身结点置于队列头部。</p>
+<p>####4.2 几个疑问<br>
+######此方法修改的是前驱结点的状态，那当前节点的状态改不改？<br>
+改，但是是依靠它的后继节点去修改的。假如目前只有一个头结点在持有着锁，现在A线程加入了同步队列，发现头结点是 SIGNAL，则阻塞自己；后来B线程又加入了队列，发现 A 线程状态是 0，于是就将 A 的状态更新为 SIGNAL。以此类推。</p>
+<h3><span id="5-加锁流程源码总结">5、加锁流程源码总结</span></h3>
+<p>ReentrantLock非公平模式下的加锁流程如下<br>
+<img src="./16.png" alt="加锁流程.png"></p>
+<p>如果有什么地方描述的错误或者缺失，请在下方留言，大家一起交流，一起学习，一起成长~<br>
+下一节：<a href="https://dongbaowen.github.io/2020/02/16/ReentrantLock-3-%E2%80%94%E2%80%94-%E9%9D%9E%E5%85%AC%E5%B9%B3%E6%A8%A1%E5%BC%8F%E8%A7%A3%E9%94%81%E6%B5%81%E7%A8%8B/" target="_blank" rel="noopener">ReentrantLock （三） —— 非公平模式解锁流程</a></p>
+
+                
+
+                <hr>
+                <!-- Pager -->
+                <ul class="pager">
+                    
+                        <li class="previous">
+                            <a href="/2020/02/16/ReentrantLock-4-——-公平锁相比非公平锁/" data-toggle="tooltip" data-placement="top" title="ReentrantLock (4) —— 公平锁相比非公平锁">&larr; Previous Post</a>
+                        </li>
+                    
+                    
+                        <li class="next">
+                            <a href="/2020/02/16/ReentrantLock-1-——-AQS简介/" data-toggle="tooltip" data-placement="top" title="ReentrantLock(1) ——  AQS简介">Next Post &rarr;</a>
+                        </li>
+                    
+                </ul>
+
+                <!-- duoshuo Share start -->
+                
+                <!-- 多说 Share end-->
+
+                <!-- 多说评论框 start -->
+                
+                <!-- 多说评论框 end -->
+
+                <!-- disqus comment start -->
+                
+                    <div class="comment">
+                        <div id="disqus_thread" class="disqus-thread"></div>
+                    </div>
+                
+                <!-- disqus comment end -->
+            </div>
+            
+            <!-- Tabe of Content -->
+            <!-- Table of Contents -->
+
+    
+      <aside id="sidebar">
+        <div id="toc" class="toc-article">
+        <strong class="toc-title">Contents</strong>
+        
+          <ol class="toc-nav"><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">1.</span> <span class="toc-nav-text">1、加锁流程真正意义上的入口</span></a></li><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">2.</span> <span class="toc-nav-text">2 尝试获取锁的通用方法:tryAcquire()</span></a></li><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.</span> <span class="toc-nav-text">3 获取锁失败的线程如何安全的加入同步队列:addWaiter()</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-5"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.0.1.</span> <span class="toc-nav-text">添加节点到队列中</span></a></li></ol></li></ol></li><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">4.</span> <span class="toc-nav-text">4、线程加入同步队列后会做什么:acquireQueued()</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-5"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">4.0.1.</span> <span class="toc-nav-text">加入队列后处理</span></a></li><li class="toc-nav-item toc-nav-level-5"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">4.0.2.</span> <span class="toc-nav-text">是否需要阻塞当前线程</span></a></li><li class="toc-nav-item toc-nav-level-5"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">4.0.3.</span> <span class="toc-nav-text">阻塞当前线程</span></a></li></ol></li></ol></li><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">5.</span> <span class="toc-nav-text">5、加锁流程源码总结</span></a></li></ol>
+        
+        </div>
+      </aside>
+    
+
+                
+            <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <!-- no hr -->
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                       
+                          <a class="tag" href="/tags/#并发与多线程" title="并发与多线程">并发与多线程</a>
+                        
+                    </div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+
+                    
+                        <li><a href="http://beantech.org" target="_blank">Bean Tech</a></li>
+                    
+                        <li><a href="http://blog.kaijun.rocks" target="_blank">Kaijun&#39;s Blog</a></li>
+                    
+                        <li><a href="http://huangxuan.me" target="_blank">Hux Blog</a></li>
+                    
+                        <li><a href="#" target="_blank">It Helps SEO</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<!-- disqus embedded js code start (one page only need to embed once) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "your-disqus-ID";
+    var disqus_identifier = "http://https://dongbaowen.github.io/2020/02/16/ReentrantLock-2-——-非公平模式加锁流程/";
+    var disqus_url = "http://https://dongbaowen.github.io/2020/02/16/ReentrantLock-2-——-非公平模式加锁流程/";
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus embedded js code start end -->
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("https://cdn.bootcss.com/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'hover',
+          placement: 'left',
+          icon: 'ℬ'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+
+    <!-- Footer -->
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                
+                
+                
+
+                
+
+                
+                    <li>
+                        <a target="_blank" href="https://www.facebook.com/dongbaowen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://github.com/dongbaowen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://www.linkedin.com/in/yu-hsuan-yen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; 董宝文 2020 
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> 
+                    <span style="display: inline-block; margin: 0 5px;">
+                        <i class="fa fa-heart"></i>
+                    </span> 
+                    re-Ported by <a href="http://beantech.org">BeanTech</a> | 
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=YenYuHsuan&repo=hexo-theme-beantech&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js"></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js"></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async("http://https://dongbaowen.github.io/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("https://cdn.bootcss.com/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-XXXXXXXX-X';
+    var _gaDomain = 'yoursite';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+
+
+	<a id="rocket" href="#top" class=""></a>
+	<script type="text/javascript" src="/js/totop.js?v=1.0.0" async=""></script>
+    <script type="text/javascript" src="/js/toc.js?v=1.0.0" async=""></script>
+<!-- Image to hack wechat -->
+<img src="http://https://dongbaowen.github.io/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

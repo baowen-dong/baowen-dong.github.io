@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head tag -->
+<head><meta name="generator" content="Hexo 3.9.0">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content>
+    <meta name="keyword" content>
+    <link rel="shortcut icon" href="/img/ironman-draw.png">
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <title>
+        
+          Dubbo（一）——Dubbo 集成于 Spring 的原理 - Baowen Dong | 董宝文
+        
+    </title>
+
+    <link rel="canonical" href="http://https://dongbaowen.github.io/2020/03/29/Dubbo（一）——Dubbo-集成于-Spring-的原理/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS --> 
+    <link rel="stylesheet" href="/css/beantech.min.css">
+    
+    <!-- Pygments Highlight CSS -->
+    <link rel="stylesheet" href="/css/highlight.css">
+
+    <link rel="stylesheet" href="/css/widget.css">
+
+    <link rel="stylesheet" href="/css/rocket.css">
+
+    <link rel="stylesheet" href="/css/signature.css">
+
+    <link rel="stylesheet" href="/css/toc.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="https://cdn.staticfile.org/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+	<!-- Modified by Yu-Hsuan Yen -->
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        
+            background-image: url('Demo.png')
+            /*post*/
+        
+    }
+    
+    #signature{
+        background-image: url('/img/signature/BeanTechSign-white.png');
+    }
+    
+</style>
+
+<header class="intro-header" >
+    <!-- Signature -->
+    <div id="signature">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                
+                    <div class="post-heading">
+                        <div class="tags">
+                            
+                              <a class="tag" href="/tags/#zookeeper&amp;dubbo" title="zookeeper&amp;dubbo">zookeeper&amp;dubbo</a>
+                            
+                        </div>
+                        <h1>Dubbo（一）——Dubbo 集成于 Spring 的原理</h1>
+                        <h2 class="subheading">Dubbo 是如何寄生于 Spring 的</h2>
+                        <span class="meta">
+                            Posted by 董宝文 on
+                            2020-03-29
+                        </span>
+                    </div>
+                
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+	
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Baowen Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+
+                    
+
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/about/">About</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/archive/">Archives</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/tags/">Tags</a>
+                        </li>
+                        
+                    
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        // CLOSE
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        // OPEN
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+    <!-- Main Content -->
+    <!-- Modify by Yu-Hsuan Yen -->
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+            <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+                <h2><span id="前言">前言</span></h2>
+<p>最近一直在看dubbo的源码部分。在阅读的时候，需要有一个入手点，才能一点一点的进行下去。自己在研究的时候，发现思绪比较乱，于是就以<strong>芋道源码</strong>为基础，一点一点的啃食。芋道源码是直接从dubbo的配置和一些核心的API开始讲起，是从dubbo已经启动的过程作为开始节点，而这些核心 API 与 Spring 的之间的关系被省略了，这些东西对我来说属于前置的知识点，所以花了比较长的时间又从 Dubbo 的核心 API 倒着往前看。</p>
+<p>在阅读 Dubbo 时，发现前置知识越来越多，如：Spring 的 refresh 中的一些核心点，Spring 中 bean 的生命周期，BeanFactory 与 FactoryBean 的区别等。所以这些前置知识花了特别多的时间去补。所幸，虽然补前置知识虽然时间长，但是性价比还是可以的。Dubbo 是依赖于Spring 的上下文环境的框架，其他依赖于 Spring 的框架也是相同的道理。Spring 的一些对外的扩展点，读过之后也会心中有数。</p>
+<h3><span id="关于本篇">关于本篇</span></h3>
+<p>1、本篇主要是描述了 Dubbo 在 Spring 创建上下文的时候，是如何从创建，到能完整提供一个RPC调用能力的一些相关点。<br>
+2、由于源码比较多，直接贴断点也太过臃肿，所以仅仅贴一些关键点来概括整个流程。<br>
+3、本文是依赖于前面的 dubbo 项目进行断点分析，项目结构可以参照这里。项目中 dubbo 的配置方式是 xml 文件，所以本篇主要说 xml 配置方式。其他方式道理相同，并不是问题的关键点。</p>
+<blockquote>
+<p><a href="https://www.jianshu.com/p/d8891dcf0418" target="_blank" rel="noopener">zookeeper（七）搭建dubbo服务</a></p>
+</blockquote>
+<p>4、项目启动的是 dubbo-user 服务，所以 UserService 为 dubbo:service，OrderService 为 dubbo:reference。</p>
+<h2><span id="一-简要核心流程">一、简要核心流程</span></h2>
+<p>下图为Spring 启动时是如何加载 Dubbo 的，其中省略了大量过程，只保留了一些关键节点，省略的部分可以略微脑补一下。<br>
+<img src="./spring%E4%B8%ADdubbo%E9%85%8D%E7%BD%AE%E5%8A%A0%E8%BD%BD.jpg" alt="spring中dubbo配置加载.jpg"></p>
+<h2><span id="二-关键点祥述">二、关键点祥述</span></h2>
+<p>整个流程的入口是 Spring 的 refresh 方法。每个方法都有比较深的调用栈。与 Dubbo 有关的入口是 refresh 中的 invokeBeanFactoryPostProcessors 方法</p>
+<h3><span id="21-invokebeanfactorypostprocessors">2.1 invokeBeanFactoryPostProcessors</span></h3>
+<p>这个方法是执行 beanFactory 的一些后处理操作，其核心流程为在Spring容器中找出实现了BeanFactoryPostProcessor接口的processor并执行。Spring容器会委托给PostProcessorRegistrationDelegate的invokeBeanFactoryPostProcessors方法执行。<br>
+ConfigurationClassPostProcessor 是比较核心的类，在这里我们关注一下这个类。它的作用是对项目中配置的类进行处理。具体处理可以分为几步：</p>
+<blockquote>
+<ul>
+<li>通过 parser 加载所有的 bean 信息，此处会将使用注解方式的 bean 注册到 beanDefinition</li>
+<li>通过 reader 读取 xml 的方式，将解析的 bean 注册到 beanDefinition</li>
+</ul>
+</blockquote>
+<h4><span id="211-加载所有的-bean-信息">2.1.1 加载所有的 bean 信息</span></h4>
+<p>在加载类信息时，spring 会去用各种方式扫到注册的 bean 信息。我们在 spring 中注册的 bean，逃不出这个方法的扫描方式。 核心方法是:</p>
+<blockquote>
+<p>org.springframework.context.annotation.ConfigurationClassParser#doProcessConfigurationClass</p>
+</blockquote>
+<p>扫描之后，会将扫描到的 bean 注册到 beanDefinitionMap 中</p>
+<h4><span id="212-加载-beandefinition">2.1.2 加载 beanDefinition</span></h4>
+<blockquote>
+<p>由于调用栈比较深，可以对照文章一开头的图，跟下断点理解。<br>
+核心的方法为 org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader#loadBeanDefinitions。方法中会解析 xml 文件，并将解析出来的 bean 注册到 beanDefinitionMap 中。<br>
+此处是个关键点，由于我们项目是使用 xml 的方式去配置 Dubbo ，所以此处是 Dubbo 与 Spring 的接壤的入口。这里我们详细描述一下。</p>
+</blockquote>
+<p>首先是此处 org.springframework.beans.factory.xml.DefaultBeanDefinitionDocumentReader#parseBeanDefinitions，可以看出方法会以配置文件根节点起，遍历所有子节点。</p>
+<figure class="highlight xquery"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * Parse the elements <span class="keyword">at</span> the<span class="built_in"> root</span> level <span class="keyword">in</span> the<span class="built_in"> document</span>:</span><br><span class="line"> * <span class="string">"import"</span>, <span class="string">"alias"</span>, <span class="string">"bean"</span>.</span><br><span class="line"> * @param<span class="built_in"> root</span> the DOM<span class="built_in"> root</span> <span class="keyword">element</span> of the <span class="keyword">document</span></span><br><span class="line"> */</span><br><span class="line">protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) &#123;</span><br><span class="line">	<span class="keyword">if</span> (delegate.isDefaultNamespace<span class="built_in">(root</span>)) &#123;</span><br><span class="line">		NodeList nl =<span class="built_in"> root</span>.getChildNodes();</span><br><span class="line">		<span class="keyword">for</span> (int i = <span class="number">0</span>; i &lt; nl.getLength(); i++) &#123;</span><br><span class="line">			Node <span class="type">node</span> = nl.<span class="type">item</span>(i);</span><br><span class="line">			<span class="keyword">if</span> (<span class="type">node</span> instanceof Element) &#123;</span><br><span class="line">				Element ele = (Element) <span class="type">node</span>;</span><br><span class="line">				<span class="keyword">if</span> (delegate.isDefaultNamespace(ele)) &#123;</span><br><span class="line">					parseDefaultElement(ele, delegate);</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">else</span> &#123;</span><br><span class="line">					delegate.parseCustomElement(ele);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		delegate.parseCustomElement<span class="built_in">(root</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其次是这里 org.springframework.beans.factory.xml.BeanDefinitionParserDelegate#parseCustomElement(org.w3c.dom.Element, org.springframework.beans.factory.config.BeanDefinition)， 此方法会通过解析出来的节点，获取对应的 Spring 的 namespaceUri ，进而获取对应的配置文件处理器。<br>
+此处 ele 参数实际值为 &lt;dubbo:service … /&gt;，namespaceUri 为 <a href="http://code.alibabatech.com/schema/dubbo" target="_blank" rel="noopener">http://code.alibabatech.com/schema/dubbo</a></p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="keyword">public</span> BeanDefinition parseCustomElement(Element ele, <span class="meta">@Nullable</span> BeanDefinition containingBd) &#123;</span><br><span class="line">	String namespaceUri = getNamespaceURI(ele);</span><br><span class="line">	<span class="keyword">if</span> (namespaceUri == <span class="literal">null</span>) &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	NamespaceHandler handler = <span class="keyword">this</span>.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);</span><br><span class="line">	<span class="keyword">if</span> (handler == <span class="literal">null</span>) &#123;</span><br><span class="line">		error(<span class="string">"Unable to locate Spring NamespaceHandler for XML schema namespace ["</span> + namespaceUri + <span class="string">"]"</span>, ele);</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> handler.parse(ele, new ParserContext(<span class="keyword">this</span>.readerContext, <span class="keyword">this</span>, containingBd));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们看一下 resolve 方法中的细节。因为这个方法内部才是 Dubbo 依赖于 Spring 的关键点。</p>
+<figure class="highlight dart"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">public NamespaceHandler resolve(<span class="built_in">String</span> namespaceUri) &#123;</span><br><span class="line">	<span class="built_in">Map</span>&lt;<span class="built_in">String</span>, <span class="built_in">Object</span>&gt; handlerMappings = getHandlerMappings();</span><br><span class="line">	<span class="built_in">Object</span> handlerOrClassName = handlerMappings.<span class="keyword">get</span>(namespaceUri);</span><br><span class="line">	<span class="keyword">if</span> (handlerOrClassName == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (handlerOrClassName instanceof NamespaceHandler) &#123;</span><br><span class="line">		<span class="keyword">return</span> (NamespaceHandler) handlerOrClassName;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="built_in">String</span> className = (<span class="built_in">String</span>) handlerOrClassName;</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			Class&lt;?&gt; handlerClass = ClassUtils.forName(className, <span class="keyword">this</span>.classLoader);</span><br><span class="line">			<span class="keyword">if</span> (!NamespaceHandler<span class="class">.<span class="keyword">class</span>.<span class="title">isAssignableFrom</span>(<span class="title">handlerClass</span>)) </span>&#123;</span><br><span class="line">				<span class="keyword">throw</span> <span class="keyword">new</span> FatalBeanException(<span class="string">"Class ["</span> + className + <span class="string">"] for namespace ["</span> + namespaceUri +</span><br><span class="line">						<span class="string">"] does not implement the ["</span> + NamespaceHandler<span class="class">.<span class="keyword">class</span>.<span class="title">getName</span>() + "] <span class="title">interface</span>");</span></span><br><span class="line"><span class="class">			&#125;</span></span><br><span class="line"><span class="class">			<span class="title">NamespaceHandler</span> <span class="title">namespaceHandler</span> = (<span class="title">NamespaceHandler</span>) <span class="title">BeanUtils</span>.<span class="title">instantiateClass</span>(<span class="title">handlerClass</span>);</span></span><br><span class="line"><span class="class">			<span class="title">namespaceHandler</span>.<span class="title">init</span>();</span></span><br><span class="line"><span class="class">			<span class="title">handlerMappings</span>.<span class="title">put</span>(<span class="title">namespaceUri</span>, <span class="title">namespaceHandler</span>);</span></span><br><span class="line"><span class="class">			<span class="title">return</span> <span class="title">namespaceHandler</span>;</span></span><br><span class="line"><span class="class">		&#125;</span></span><br><span class="line"><span class="class">		<span class="title">catch</span> (<span class="title">ClassNotFoundException</span> <span class="title">ex</span>) </span>&#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> FatalBeanException(<span class="string">"Could not find NamespaceHandler class ["</span> + className +</span><br><span class="line">					<span class="string">"] for namespace ["</span> + namespaceUri + <span class="string">"]"</span>, ex);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (LinkageError err) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> FatalBeanException(<span class="string">"Unresolvable class definition for NamespaceHandler class ["</span> +</span><br><span class="line">					className + <span class="string">"] for namespace ["</span> + namespaceUri + <span class="string">"]"</span>, err);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此处的 NamespaceHandler 为 DubboNamespaceHandler，再创建结束之后，进行 init 初始化。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">DubboNamespaceHandler</span> <span class="keyword">extends</span> <span class="title">NamespaceHandlerSupport</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    static &#123;</span><br><span class="line">        <span class="type">Version</span>.checkDuplicate(<span class="type">DubboNamespaceHandler</span><span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void init() &#123;</span><br><span class="line">        registerBeanDefinitionParser(<span class="string">"application"</span>, <span class="keyword">new</span> <span class="type">DubboBeanDefinitionParser</span>(<span class="type">ApplicationConfig</span><span class="class">.<span class="keyword">class</span>, <span class="title">true</span>))</span>;</span><br><span class="line">        registerBeanDefinitionParser(<span class="string">"module"</span>, <span class="keyword">new</span> <span class="type">DubboBeanDefinitionParser</span>(<span class="type">ModuleConfig</span><span class="class">.<span class="keyword">class</span>, <span class="title">true</span>))</span>;</span><br><span class="line">        registerBeanDefinitionParser(<span class="string">"registry"</span>, <span class="keyword">new</span> <span class="type">DubboBeanDefinitionParser</span>(<span class="type">RegistryConfig</span><span class="class">.<span class="keyword">class</span>, <span class="title">true</span>))</span>;</span><br><span class="line">        registerBeanDefinitionParser(<span class="string">"monitor"</span>, <span class="keyword">new</span> <span class="type">DubboBeanDefinitionParser</span>(<span class="type">MonitorConfig</span><span class="class">.<span class="keyword">class</span>, <span class="title">true</span>))</span>;</span><br><span class="line">        registerBeanDefinitionParser(<span class="string">"provider"</span>, <span class="keyword">new</span> <span class="type">DubboBeanDefinitionParser</span>(<span class="type">ProviderConfig</span><span class="class">.<span class="keyword">class</span>, <span class="title">true</span>))</span>;</span><br><span class="line">        registerBeanDefinitionParser(<span class="string">"consumer"</span>, <span class="keyword">new</span> <span class="type">DubboBeanDefinitionParser</span>(<span class="type">ConsumerConfig</span><span class="class">.<span class="keyword">class</span>, <span class="title">true</span>))</span>;</span><br><span class="line">        registerBeanDefinitionParser(<span class="string">"protocol"</span>, <span class="keyword">new</span> <span class="type">DubboBeanDefinitionParser</span>(<span class="type">ProtocolConfig</span><span class="class">.<span class="keyword">class</span>, <span class="title">true</span>))</span>;</span><br><span class="line">        registerBeanDefinitionParser(<span class="string">"service"</span>, <span class="keyword">new</span> <span class="type">DubboBeanDefinitionParser</span>(<span class="type">ServiceBean</span><span class="class">.<span class="keyword">class</span>, <span class="title">true</span>))</span>;</span><br><span class="line">        registerBeanDefinitionParser(<span class="string">"reference"</span>, <span class="keyword">new</span> <span class="type">DubboBeanDefinitionParser</span>(<span class="type">ReferenceBean</span><span class="class">.<span class="keyword">class</span>, <span class="title">false</span>))</span>;</span><br><span class="line">        registerBeanDefinitionParser(<span class="string">"annotation"</span>, <span class="keyword">new</span> <span class="type">AnnotationBeanDefinitionParser</span>());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，DubboNamespaceHandler 在初始化的时候，会创建所有 dubbo 标签对应的Config 类的 DubboBeanDefinitionParser。并将 DubboBeanDefinitionParser 和 对应的 dubbo 标签类注册到 NamespaceHandlerSupport 的 parsers 中。</p>
+<blockquote>
+<ul>
+<li>如：dubbo:registry，对应 beanClass 为 RegistryConfig 的 DubboBeanDefinitionParser</li>
+<li>如：dubbo:service，对应 beanClass 为 ServiceBean 的 DubboBeanDefinitionParser</li>
+<li>如：dubbo:reference，对应 beanClass 为 ReferenceBean 的 DubboBeanDefinitionParser</li>
+</ul>
+</blockquote>
+<p>最后，会在 com.alibaba.dubbo.config.spring.schema.DubboBeanDefinitionParser#parse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext, java.lang.Class&lt;?&gt;, boolean) 方法中进行处理</p>
+<figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> BeanDefinition <span class="title">parse</span><span class="params">(Element element, ParserContext parserContext, Class&lt;?&gt; beanClass, <span class="keyword">boolean</span> required)</span> </span>&#123;</span><br><span class="line">    <span class="comment">/** step 1: 创建 RootBeanDefinition */</span></span><br><span class="line">    RootBeanDefinition beanDefinition = <span class="keyword">new</span> RootBeanDefinition();</span><br><span class="line">    beanDefinition.setBeanClass(beanClass);</span><br><span class="line">    beanDefinition.setLazyInit(<span class="literal">false</span>);</span><br><span class="line">    <span class="keyword">String</span> id = element.getAttribute(<span class="string">"id"</span>);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/** step 2: 注册到 beanDefinitionMap 中 */</span></span><br><span class="line">    parserContext.getRegistry().registerBeanDefinition(id, beanDefinition);</span><br><span class="line">      </span><br><span class="line">    <span class="comment">/** step 3: 对beanDefinition进行一些设置 */</span></span><br><span class="line">    <span class="comment">//此处省略</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> beanDefinition;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4><span id="213-dubbo-的-beandefinition-特殊之处">2.1.3  Dubbo 的 beanDefinition 特殊之处</span></h4>
+<p>Dubbo 服务比较特殊，beanDefinition 跟普通的 bean 不太一样。在向 beanDefinitionMap 注册时，普通的 beanDefinition 的 beanName 与 beanClass 是对应的；而 dubbo 服务的 beanDefinition 的 beanName 是dubbo 服务的名称，beanClass 为 dubbo 对应的 Bean。</p>
+<p>普通的 beanDefinition：<br>
+<img src="./%E6%99%AE%E9%80%9Abean.png" alt="image.png"></p>
+<p>dubbo 引用的服务的 beanDefinition：<br>
+<img src="./dubbo-bean.png" alt="image.png"></p>
+<h3><span id="22-registerlisteners">2.2 registerListeners</span></h3>
+<p>这一步的核心流程是从 beanFactory 中获取所有的 ApplicationListener，然后注册到监听器集合中。它的关键点其实是 ServiceBean。因为 ServiceBean 是 ApplicationListener 的实现。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">ServiceBean&lt;T&gt;</span> <span class="keyword">extends</span> <span class="title">ServiceConfig&lt;T&gt;</span> <span class="title">implements</span> <span class="title">InitializingBean</span>, <span class="title">DisposableBean</span>, <span class="title">ApplicationContextAware</span>, </span></span><br><span class="line"><span class="class">                                                               <span class="title">ApplicationListener&lt;ContextRefreshedEvent&gt;</span>, <span class="title">BeanNameAware</span> </span>&#123;</span><br><span class="line">      <span class="comment">//省略</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以 beanFactory 中 ServiceBean 也会被注册到监听器集合中。项目中的 ServiceBean 的 beanClass 实际是 UserService。</p>
+<h3><span id="23-finishbeanfactoryinitialization">2.3 finishBeanFactoryInitialization</span></h3>
+<p>这一步的核心点，主要是创建剩余的各类对象，并将其保存到 singletonObjects 中。其中关联的前置知识为<strong>Spring 中 bean 的生命周期</strong>。它的核心方法是：<br>
+org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#doCreateBean</p>
+<figure class="highlight processing"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="keyword">Object</span> doCreateBean(<span class="keyword">final</span> <span class="keyword">String</span> beanName, <span class="keyword">final</span> RootBeanDefinition mbd, <span class="keyword">final</span> @Nullable <span class="keyword">Object</span>[] args)</span><br><span class="line">		<span class="keyword">throws</span> BeanCreationException &#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 实例化 bean</span></span><br><span class="line">	BeanWrapper instanceWrapper = <span class="keyword">null</span>;</span><br><span class="line">	<span class="keyword">if</span> (mbd.isSingleton()) &#123;</span><br><span class="line">		instanceWrapper = <span class="keyword">this</span>.factoryBeanInstanceCache.remove(beanName);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (instanceWrapper == <span class="keyword">null</span>) &#123;</span><br><span class="line">		instanceWrapper = createBeanInstance(beanName, mbd, args);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">final</span> <span class="keyword">Object</span> bean = instanceWrapper.getWrappedInstance();</span><br><span class="line">	</span><br><span class="line"></span><br><span class="line">	<span class="comment">//此处省略...</span></span><br><span class="line"></span><br><span class="line">               <span class="comment">// 填充bean</span></span><br><span class="line">	populateBean(beanName, mbd, instanceWrapper);</span><br><span class="line">               <span class="comment">// 初始化 bean</span></span><br><span class="line">	exposedObject = initializeBean(beanName, exposedObject, mbd);</span><br><span class="line">	</span><br><span class="line">               <span class="comment">// 此处省略</span></span><br><span class="line">	<span class="keyword">return</span> exposedObject;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>它的具体流程为：</p>
+<blockquote>
+<ul>
+<li>遍历 beanDefinitionNames org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#resolveBeforeInstantiation —— 执行 InstantiationAwareBeanPostProcessorAdapter 实例化对象前操作
+<ul>
+<li>createBeanInstance 实例化bean（默认无参构造）</li>
+<li>populateBean 填充bean
+<ul>
+<li>执行 InstantiationAwareBeanPostProcessorAdapter 的设置属性方法和实例化后方法</li>
+<li>得到所有的 InstantiationAwareBeanPostProcessor，遍历执行 postProcessProperties 方法
+<ul>
+<li>通过反射获取 @Resource 修饰的属性（org.springframework.context.annotation.CommonAnnotationBeanPostProcessor#buildResourceMetadata），然后还是通过getBean获取到对象，然后进行注入</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>initializeBean 初始化bean
+<ul>
+<li>BeanNameAware 的 setBeanName</li>
+<li>BeanFactoryAware 的 setBeanFactory</li>
+<li>ApplicationContextAware 的 setApplicationContext</li>
+<li>InstantiationAwareBeanPostProcessorAdapter 的 postProcessBeforeInitialization</li>
+<li>InstantiationAwareBeanPostProcessorAdapter 的 postProcessAfterInitialization</li>
+</ul>
+</li>
+<li>添加到 singletonObjects</li>
+</ul>
+</li>
+</ul>
+</blockquote>
+<p>ps：此处并不是只有这一步才会跟 bean 生命周期相关，bean 生命周期贯穿在 refresh 的很多流程中，只要执行doGetBean 方法，都会走这个流程。此处仅仅借楼关联一下。</p>
+<h3><span id="24-finishrefresh">2.4 finishRefresh</span></h3>
+<p>这一步的核心点，是通知所有的监听器上下文刷新结束的事件。在这一步执行时，会通知到 ServiceBean。</p>
+<figure class="highlight less"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">public</span> <span class="selector-tag">void</span> <span class="selector-tag">onApplicationEvent</span>(ContextRefreshedEvent event) &#123;</span><br><span class="line">    <span class="selector-tag">if</span> (isDelay() &amp;&amp; !isExported() &amp;&amp; !isUnexported()) &#123;</span><br><span class="line">        <span class="selector-tag">if</span> (logger.isInfoEnabled()) &#123;</span><br><span class="line">            <span class="selector-tag">logger</span><span class="selector-class">.info</span>(<span class="string">"The service ready on spring started. service: "</span> + getInterface());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//暴露服务</span></span><br><span class="line">        <span class="selector-tag">export</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此处暴露的是 UserService。</p>
+<h2><span id="三-总结">三、总结</span></h2>
+<p>Dubbo 的启动条件是完全依赖于 Spring 的启动流程，Spring 的启动流程中核心的点是 refresh 方法。所以只要搞懂 refresh 方法，其他的拓展框架流程也会明白。只不过关联的知识点太多了，还是需要时间的积累才能一点一点的搞懂。<br>
+如果本篇有描述不清，或者描述有误的地方，还望在下方留言，大家一起交流，一起学习，一起进步~</p>
+
+                
+
+                <hr>
+                <!-- Pager -->
+                <ul class="pager">
+                    
+                    
+                        <li class="next">
+                            <a href="/2020/02/23/彻底理解synchronized（转载）/" data-toggle="tooltip" data-placement="top" title="彻底理解synchronized（转载）">Next Post &rarr;</a>
+                        </li>
+                    
+                </ul>
+
+                <!-- duoshuo Share start -->
+                
+                <!-- 多说 Share end-->
+
+                <!-- 多说评论框 start -->
+                
+                <!-- 多说评论框 end -->
+
+                <!-- disqus comment start -->
+                
+                    <div class="comment">
+                        <div id="disqus_thread" class="disqus-thread"></div>
+                    </div>
+                
+                <!-- disqus comment end -->
+            </div>
+            
+            <!-- Tabe of Content -->
+            <!-- Table of Contents -->
+
+    
+      <aside id="sidebar">
+        <div id="toc" class="toc-article">
+        <strong class="toc-title">Contents</strong>
+        
+          <ol class="toc-nav"><li class="toc-nav-item toc-nav-level-2"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">1.</span> <span class="toc-nav-text">前言</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">1.1.</span> <span class="toc-nav-text">关于本篇</span></a></li></ol></li><li class="toc-nav-item toc-nav-level-2"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">2.</span> <span class="toc-nav-text">一、简要核心流程</span></a></li><li class="toc-nav-item toc-nav-level-2"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.</span> <span class="toc-nav-text">二、关键点祥述</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.1.</span> <span class="toc-nav-text">2.1 invokeBeanFactoryPostProcessors</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-4"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.1.1.</span> <span class="toc-nav-text">2.1.1 加载所有的 bean 信息</span></a></li><li class="toc-nav-item toc-nav-level-4"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.1.2.</span> <span class="toc-nav-text">2.1.2 加载 beanDefinition</span></a></li><li class="toc-nav-item toc-nav-level-4"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.1.3.</span> <span class="toc-nav-text">2.1.3  Dubbo 的 beanDefinition 特殊之处</span></a></li></ol></li><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.2.</span> <span class="toc-nav-text">2.2 registerListeners</span></a></li><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.3.</span> <span class="toc-nav-text">2.3 finishBeanFactoryInitialization</span></a></li><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.4.</span> <span class="toc-nav-text">2.4 finishRefresh</span></a></li></ol></li><li class="toc-nav-item toc-nav-level-2"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">4.</span> <span class="toc-nav-text">三、总结</span></a></li></ol>
+        
+        </div>
+      </aside>
+    
+
+                
+            <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <!-- no hr -->
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                       
+                          <a class="tag" href="/tags/#zookeeper&amp;dubbo" title="zookeeper&amp;dubbo">zookeeper&amp;dubbo</a>
+                        
+                    </div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+
+                    
+                        <li><a href="http://beantech.org" target="_blank">Bean Tech</a></li>
+                    
+                        <li><a href="http://blog.kaijun.rocks" target="_blank">Kaijun&#39;s Blog</a></li>
+                    
+                        <li><a href="http://huangxuan.me" target="_blank">Hux Blog</a></li>
+                    
+                        <li><a href="#" target="_blank">It Helps SEO</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+<!-- disqus embedded js code start (one page only need to embed once) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "your-disqus-ID";
+    var disqus_identifier = "http://https://dongbaowen.github.io/2020/03/29/Dubbo（一）——Dubbo-集成于-Spring-的原理/";
+    var disqus_url = "http://https://dongbaowen.github.io/2020/03/29/Dubbo（一）——Dubbo-集成于-Spring-的原理/";
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus embedded js code start end -->
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("https://cdn.bootcss.com/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'hover',
+          placement: 'left',
+          icon: 'ℬ'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+
+    <!-- Footer -->
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                
+                
+                
+
+                
+
+                
+                    <li>
+                        <a target="_blank" href="https://www.facebook.com/dongbaowen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://github.com/dongbaowen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://www.linkedin.com/in/yu-hsuan-yen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; 董宝文 2020 
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> 
+                    <span style="display: inline-block; margin: 0 5px;">
+                        <i class="fa fa-heart"></i>
+                    </span> 
+                    re-Ported by <a href="http://beantech.org">BeanTech</a> | 
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=YenYuHsuan&repo=hexo-theme-beantech&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js"></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js"></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async("http://https://dongbaowen.github.io/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("https://cdn.bootcss.com/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-XXXXXXXX-X';
+    var _gaDomain = 'yoursite';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+
+
+	<a id="rocket" href="#top" class=""></a>
+	<script type="text/javascript" src="/js/totop.js?v=1.0.0" async=""></script>
+    <script type="text/javascript" src="/js/toc.js?v=1.0.0" async=""></script>
+<!-- Image to hack wechat -->
+<img src="http://https://dongbaowen.github.io/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

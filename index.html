@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head tag -->
+<head><meta name="generator" content="Hexo 3.9.0">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content>
+    <meta name="keyword" content>
+    <link rel="shortcut icon" href="/img/ironman-draw.png">
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <title>
+        
+          Baowen Dong | 董宝文
+        
+    </title>
+
+    <link rel="canonical" href="http://https://dongbaowen.github.io/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS --> 
+    <link rel="stylesheet" href="/css/beantech.min.css">
+    
+    <!-- Pygments Highlight CSS -->
+    <link rel="stylesheet" href="/css/highlight.css">
+
+    <link rel="stylesheet" href="/css/widget.css">
+
+    <link rel="stylesheet" href="/css/rocket.css">
+
+    <link rel="stylesheet" href="/css/signature.css">
+
+    <link rel="stylesheet" href="/css/toc.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="https://cdn.staticfile.org/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+	<!-- Modified by Yu-Hsuan Yen -->
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        
+            background-image: url('/img/header_img/home-bg-2-dark.png') 
+            /*config*/
+        
+    }
+    
+    #signature{
+        background-image: url('/img/signature/BeanTechSign-white.png');
+    }
+    
+</style>
+
+<header class="intro-header" >
+    <!-- Signature -->
+    <div id="signature">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                
+                    <div class="site-heading">
+                        <h1>Baowen Blog</h1>
+                        <!--<hr class="small">-->
+                        <span class="subheading">我干了什么 究竟拿了时间换了什么。珍惜眼前人</span>
+                    </div>
+                
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+	
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Baowen Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+
+                    
+
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/about/">About</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/archive/">Archives</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/tags/">Tags</a>
+                        </li>
+                        
+                    
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        // CLOSE
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        // OPEN
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+    <!-- Main Content -->
+    <!-- Main Content -->
+<div class="container">
+    <div class="row">
+        
+
+<!-- USE SIDEBAR -->
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-1
+                col-md-8 col-md-offset-1
+                col-sm-12
+                col-xs-12
+                post-container
+            ">
+            
+                <!-- Main Content -->
+
+
+<div class="post-preview">
+
+    <a href="/2020/03/29/Dubbo（一）——Dubbo-集成于-Spring-的原理/">
+        <h2 class="post-title">
+            Dubbo（一）——Dubbo 集成于 Spring 的原理
+        </h2>
+        <h3 class="post-subtitle">
+            Dubbo 是如何寄生于 Spring 的
+        </h3>
+        <div class="post-content-preview">
+            前言
+最近一直在看dubbo的源码部分。在阅读的时候，需要有一个入手点，才能一点一点的进行下去。自己在研究的时候，发现思绪比较乱，于是就以芋道源码为基础，一点一点的啃食。芋道源码是直接从dubbo的配置和一些核心的API开始讲起，是从dubbo已经启动的过程作为开始节点，而这些核心 API 与 Spring 的之间的关系被省略了，这些东西对我来说属于前置的知识点，所以花了比较长的时间又从 D......
+        </div>
+    </a>
+    
+        <p class="post-meta" style="margin: 10px 0;">
+            Posted by 董宝文 on
+            2020-03-29
+        </p>
+        <div class="tags">
+            
+              <a href="/tags/#zookeeper&amp;dubbo" title="zookeeper&amp;dubbo">zookeeper&amp;dubbo</a>
+            
+        </div>
+    
+
+</div>
+<hr>
+
+<div class="post-preview">
+
+    <a href="/2020/02/23/彻底理解synchronized（转载）/">
+        <h2 class="post-title">
+            彻底理解synchronized（转载）
+        </h2>
+        <h3 class="post-subtitle">
+            彻底理解synchronized
+        </h3>
+        <div class="post-content-preview">
+            
+原文：彻底理解synchronized
+
+一、synchronized简介
+在学习知识前，我们先来看一个现象：
+12345678910111213141516171819202122public class SynchronizedDemo implements Runnable &#123;    private static int count = 0;    public stati......
+        </div>
+    </a>
+    
+        <p class="post-meta" style="margin: 10px 0;">
+            Posted by 董宝文 on
+            2020-02-23
+        </p>
+        <div class="tags">
+            
+              <a href="/tags/#并发与多线程" title="并发与多线程">并发与多线程</a>
+            
+        </div>
+    
+
+</div>
+<hr>
+
+<div class="post-preview">
+
+    <a href="/2020/02/23/浅谈偏向锁、轻量级锁、重量级锁-转载/">
+        <h2 class="post-title">
+            浅谈偏向锁、轻量级锁、重量级锁(转载)
+        </h2>
+        <h3 class="post-subtitle">
+            浅谈偏向锁、轻量级锁、重量级锁
+        </h3>
+        <div class="post-content-preview">
+            为了换取性能，JVM在内置锁上做了非常多的优化，膨胀式的锁分配策略就是其一。理解偏向锁、轻量级锁、重量级锁的要解决的基本问题，几种锁的分配和膨胀过程，有助于编写并优化基于锁的并发程序。
+
+内置锁的分配和膨胀过程较为复杂，限于时间和精力，文中该部分内容是根据网上的多方资料整合而来；仅为方便查阅，后面继续分析JVM源码的时候也有个参考。如果对各级锁已经有了基本了解，读者大可跳过此文。
+
+一、隐藏......
+        </div>
+    </a>
+    
+        <p class="post-meta" style="margin: 10px 0;">
+            Posted by 董宝文 on
+            2020-02-23
+        </p>
+        <div class="tags">
+            
+              <a href="/tags/#并发与多线程" title="并发与多线程">并发与多线程</a>
+            
+        </div>
+    
+
+</div>
+<hr>
+
+<div class="post-preview">
+
+    <a href="/2020/02/19/FutureTask-2-——-源码分析，基本属性介绍/">
+        <h2 class="post-title">
+            FutureTask(2) —— 源码分析，基本属性介绍
+        </h2>
+        <h3 class="post-subtitle">
+            源码分析，基本属性介绍
+        </h3>
+        <div class="post-content-preview">
+            一、前言
+上篇文章介绍了 FutureTask和它的亲戚们，我们了解了 Future 以及 FutureTask 在使用时会有什么样的效果，本文主要来研究FutureTask是如何工作的。在探究FutureTask源码之前，我们先来认识一下关于Java并发工具类的三板斧。
+
+状态、队列、CAS
+
+关于这个“三板斧”的概念，是 深入理解FutureTask 这篇博文介绍的，结合我之前阅读过得J......
+        </div>
+    </a>
+    
+        <p class="post-meta" style="margin: 10px 0;">
+            Posted by 董宝文 on
+            2020-02-19
+        </p>
+        <div class="tags">
+            
+              <a href="/tags/#并发与多线程" title="并发与多线程">并发与多线程</a>
+            
+        </div>
+    
+
+</div>
+<hr>
+
+<div class="post-preview">
+
+    <a href="/2020/02/19/FutureTask-1-——-先认识一下FutureTask-和它的亲戚们/">
+        <h2 class="post-title">
+            FutureTask(1) —— 先认识一下FutureTask 和它的亲戚们
+        </h2>
+        <h3 class="post-subtitle">
+            先认识一下FutureTask 和它的亲戚们
+        </h3>
+        <div class="post-content-preview">
+            一、前言
+最近一直在研究Java并发‘’相关的知识，从Thread到ThreadPoolExecutor，从synchronize到AQS。此次研究一下 FutureTask以及其相关的类的工作方式，与FutureTask相关的类包括：Callable、Runnable、Future和ThreadPoolExecutor等，我们一点一点的来慢慢引入。
+二、Callable 和 Runnabl......
+        </div>
+    </a>
+    
+        <p class="post-meta" style="margin: 10px 0;">
+            Posted by 董宝文 on
+            2020-02-19
+        </p>
+        <div class="tags">
+            
+              <a href="/tags/#并发与多线程" title="并发与多线程">并发与多线程</a>
+            
+        </div>
+    
+
+</div>
+<hr>
+
+<div class="post-preview">
+
+    <a href="/2020/02/19/ThreadPoolExecutor-3-——-干活的人-Worker/">
+        <h2 class="post-title">
+            ThreadPoolExecutor(3) —— 干活的人 Worker
+        </h2>
+        <h3 class="post-subtitle">
+            干活的人 Worker
+        </h3>
+        <div class="post-content-preview">
+            一、前言
+前一篇文章，大体说明了一下线程池如何添加一个新的Worker去执行任务。本篇来详细分析 Worker 本身。
+二、Worker 的结构
+2.1 Worker 整体结构
+123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585......
+        </div>
+    </a>
+    
+        <p class="post-meta" style="margin: 10px 0;">
+            Posted by 董宝文 on
+            2020-02-19
+        </p>
+        <div class="tags">
+            
+              <a href="/tags/#并发与多线程" title="并发与多线程">并发与多线程</a>
+            
+        </div>
+    
+
+</div>
+<hr>
+
+<div class="post-preview">
+
+    <a href="/2020/02/19/ThreadPoolExecutor-2-——-线程池源码分析/">
+        <h2 class="post-title">
+            ThreadPoolExecutor(2) —— 线程池源码分析
+        </h2>
+        <h3 class="post-subtitle">
+            线程池源码分析
+        </h3>
+        <div class="post-content-preview">
+            一、前言
+
+分析源码就像旦总的生活，朴实无华且枯燥。
+                                                                                   —— 若琳
+
+分析源码虽然是枯燥的，但是我们带着一颗求知的好奇心，是不会感到特别枯燥。就像我们去慢慢挖掘底层的真相，会别有一番收获，别有一番欣喜。
+二、ThreadPoolE......
+        </div>
+    </a>
+    
+        <p class="post-meta" style="margin: 10px 0;">
+            Posted by 董宝文 on
+            2020-02-19
+        </p>
+        <div class="tags">
+            
+              <a href="/tags/#并发与多线程" title="并发与多线程">并发与多线程</a>
+            
+        </div>
+    
+
+</div>
+<hr>
+
+<div class="post-preview">
+
+    <a href="/2020/02/19/ThreadPoolExecutor-1-——-线程池的基本属性/">
+        <h2 class="post-title">
+            ThreadPoolExecutor(1) —— 线程池的基本属性
+        </h2>
+        <h3 class="post-subtitle">
+            线程池的基本属性
+        </h3>
+        <div class="post-content-preview">
+            一、前言
+之前用线程池，都是直接用Executors.newXXXThreadPool() 粗暴的使用。在阿里巴巴开发手册中，并不建议使用Executors去创建线程池（为何不建议使用，我们后面再说），更建议用ThreadPoolExecutor去更定制化的使用线程池。所以借此机会，（又）根据数篇详细易懂的博客来进行学习和理解。
+
+原文：https://www.cnblogs.com/jav......
+        </div>
+    </a>
+    
+        <p class="post-meta" style="margin: 10px 0;">
+            Posted by 董宝文 on
+            2020-02-19
+        </p>
+        <div class="tags">
+            
+              <a href="/tags/#并发与多线程" title="并发与多线程">并发与多线程</a>
+            
+        </div>
+    
+
+</div>
+<hr>
+
+<div class="post-preview">
+
+    <a href="/2020/02/16/ReentrantLock-3-——-非公平模式解锁流程/">
+        <h2 class="post-title">
+            ReentrantLock(3) —— 非公平模式解锁流程
+        </h2>
+        <h3 class="post-subtitle">
+            非公平模式解锁流程
+        </h3>
+        <div class="post-content-preview">
+            一、解锁流程源码解读
+解锁的源码相对简单,源码如下：
+123public void unlock() &#123;    sync.release(1);  &#125;
+12345678910public final boolean release(int arg) &#123;    if (tryRelease(arg)) &#123; //释放锁(state-1),若释放后锁可被其他......
+        </div>
+    </a>
+    
+        <p class="post-meta" style="margin: 10px 0;">
+            Posted by 董宝文 on
+            2020-02-16
+        </p>
+        <div class="tags">
+            
+              <a href="/tags/#并发与多线程" title="并发与多线程">并发与多线程</a>
+            
+        </div>
+    
+
+</div>
+<hr>
+
+<div class="post-preview">
+
+    <a href="/2020/02/16/ReentrantLock-5-——-非公平锁总结/">
+        <h2 class="post-title">
+            ReentrantLock (5) —— 非公平锁总结
+        </h2>
+        <h3 class="post-subtitle">
+            非公平锁总结
+        </h3>
+        <div class="post-content-preview">
+            经过对 ReentrantLock 中非公平锁源码的解读，可以总结一下其中的一些核心点。
+1、什么是锁？什么是加锁？什么是解锁？什么是重入？
+锁可以理解为：AQS 中 state 属性从0更新为1这个过程。
+重入可以理解为：成功将 state 属性从0更新为1的这条线程，又将state从1进行了多次累加的过程。
+加锁可以理解为：某个线程通过CAS成功的将 state 属性从0更新为1。
+解锁......
+        </div>
+    </a>
+    
+        <p class="post-meta" style="margin: 10px 0;">
+            Posted by 董宝文 on
+            2020-02-16
+        </p>
+        <div class="tags">
+            
+              <a href="/tags/#并发与多线程" title="并发与多线程">并发与多线程</a>
+            
+        </div>
+    
+
+</div>
+<hr>
+
+
+
+<!-- Pager -->
+
+<ul class="pager">
+    
+    
+        <li class="next">
+            <a href="/archives/2/">Older Posts &rarr;</a>
+        </li>
+    
+</ul>
+
+
+
+                <!-- 如果开启评论功能 -->
+                
+            </div>
+
+          <!-- Sidebar Container -->
+<div class="
+    col-lg-3 col-lg-offset-0
+    col-md-3 col-md-offset-0
+    col-sm-12
+    col-xs-12
+    sidebar-container
+">
+    
+        <!-- Featured Tags -->
+
+<section>
+    <!-- no hr -->
+    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+    <div class="tags">
+        
+            
+        
+            
+            <a href="/tags/#并发与多线程" title="并发与多线程" rel="12">并发与多线程</a>
+            
+        
+            
+            <a href="/tags/#Mysql" title="Mysql" rel="3">Mysql</a>
+            
+        
+            
+        
+            
+        
+    </div>
+</section>
+
+        <hr>
+    
+        <!-- Short About -->
+<section class="visible-md visible-lg">
+    <h5><a href="/about/">ABOUT ME</a></h5>
+    <div class="short-about">
+
+        
+            <img id = "avatar_pic" src="/img/avatar.jpg" />
+        
+
+        
+            <p>Hi, I&#39;m Baowen Dong</p>
+        
+
+        <!-- SNS Link -->
+        <ul class="list-inline">
+            
+            
+            
+
+            
+
+            
+                <li>
+                    <a target="_blank" href="https://www.facebook.com/dongbaowen">
+                        <span class="fa-stack fa-lg">
+                            <i class="fa fa-circle fa-stack-2x"></i>
+                            <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                        </span>
+                    </a>
+                </li>
+            
+
+            
+                <li>
+                    <a target="_blank"  href="https://github.com/dongbaowen">
+                        <span class="fa-stack fa-lg">
+                            <i class="fa fa-circle fa-stack-2x"></i>
+                            <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                        </span>
+                    </a>
+                </li>
+            
+            
+            
+            
+                <li>
+                    <a target="_blank"  href="https://www.linkedin.com/in/yu-hsuan-yen">
+                        <span class="fa-stack fa-lg">
+                            <i class="fa fa-circle fa-stack-2x"></i>
+                            <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                        </span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+</section>
+        <hr>
+    
+        
+  <h5>RECENT POSTS</h3>
+  <div class="widget">
+    <ul>
+      
+        <li>
+          <a href="/2020/03/29/Dubbo（一）——Dubbo-集成于-Spring-的原理/">Dubbo（一）——Dubbo 集成于 Spring 的原理</a>
+        </li>
+      
+        <li>
+          <a href="/2020/02/23/彻底理解synchronized（转载）/">彻底理解synchronized（转载）</a>
+        </li>
+      
+        <li>
+          <a href="/2020/02/23/浅谈偏向锁、轻量级锁、重量级锁-转载/">浅谈偏向锁、轻量级锁、重量级锁(转载)</a>
+        </li>
+      
+        <li>
+          <a href="/2020/02/19/FutureTask-2-——-源码分析，基本属性介绍/">FutureTask(2) —— 源码分析，基本属性介绍</a>
+        </li>
+      
+        <li>
+          <a href="/2020/02/19/FutureTask-1-——-先认识一下FutureTask-和它的亲戚们/">FutureTask(1) —— 先认识一下FutureTask 和它的亲戚们</a>
+        </li>
+      
+    </ul>
+  </div>
+
+        <hr>
+    
+        <!-- Friends Blog -->
+
+<h5>FRIENDS</h5>
+<ul class="list-inline">
+
+    
+        <li><a href="http://beantech.org" target="_blank">Bean Tech</a></li>
+    
+        <li><a href="http://blog.kaijun.rocks" target="_blank">Kaijun&#39;s Blog</a></li>
+    
+        <li><a href="http://huangxuan.me" target="_blank">Hux Blog</a></li>
+    
+        <li><a href="#" target="_blank">It Helps SEO</a></li>
+    
+</ul>
+
+        <hr>
+    
+</div>
+
+        
+    </div>
+</div>
+
+
+    <!-- Footer -->
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                
+                
+                
+
+                
+
+                
+                    <li>
+                        <a target="_blank" href="https://www.facebook.com/dongbaowen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://github.com/dongbaowen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://www.linkedin.com/in/yu-hsuan-yen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; 董宝文 2020 
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> 
+                    <span style="display: inline-block; margin: 0 5px;">
+                        <i class="fa fa-heart"></i>
+                    </span> 
+                    re-Ported by <a href="http://beantech.org">BeanTech</a> | 
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=YenYuHsuan&repo=hexo-theme-beantech&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js"></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js"></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async("http://https://dongbaowen.github.io/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("https://cdn.bootcss.com/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-XXXXXXXX-X';
+    var _gaDomain = 'yoursite';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+
+
+	<a id="rocket" href="#top" class=""></a>
+	<script type="text/javascript" src="/js/totop.js?v=1.0.0" async=""></script>
+    <script type="text/javascript" src="/js/toc.js?v=1.0.0" async=""></script>
+<!-- Image to hack wechat -->
+<img src="http://https://dongbaowen.github.io/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>
