@@ -302,7 +302,7 @@
 </ul>
 <h3><span id="四-线程池的执行流程">四、线程池的执行流程</span></h3>
 <h4><span id="41-线程池执行流程">4.1 线程池执行流程</span></h4>
-<p><img src="https://upload-images.jianshu.io/upload_images/6824285-c5d7843dda680bec.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="线程池执行流程"></p>
+<p><img src="./1.png" alt="线程池执行流程"></p>
 <ol>
 <li>如果运行的线程数少于corePoolSize的时候，直接创建新线程来处理任务。即使线程池中的其他任务是空闲的（会默认先把corePoolSize填充满，保证核心线程数）</li>
 <li>当corePoolSize满了的时候，新任务提交时，会被推入任务队列进行等待。完成任务的核心线程会从任务队列中进行领取。</li>
